@@ -1,0 +1,175 @@
+2025-05-01 15:23:59,588 - __main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 15:23:59,588 - __main__ - INFO - Starting Medical AI Chat application...
+2025-05-01 15:23:59,588 - __main__ - INFO - Project root: /Users/shmuel/dev/large_translate/largetranslator
+2025-05-01 15:23:59,588 - __main__ - INFO - Server will run at: http://0.0.0.0:8000
+2025-05-01 15:23:59,645 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 15:23:59,936 - backend.api.main - INFO - API starting up
+2025-05-01 15:24:03,977 - backend.external_services.supabase.client - ERROR - Supabase credentials not found in environment variables
+2025-05-01 15:24:03,977 - backend.external_services.supabase.client - ERROR - Failed to initialize Supabase client: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:24:03,977 - backend.external_services.supabase.auth_service - ERROR - Error during signup: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:24:03,977 - backend.api.auth.router - ERROR - Signup failed: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:10,562 - backend.external_services.supabase.client - ERROR - Supabase credentials not found in environment variables
+2025-05-01 15:34:10,563 - backend.external_services.supabase.client - ERROR - Failed to initialize Supabase client: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:10,563 - backend.external_services.supabase.auth_service - ERROR - Error during signup: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:10,563 - backend.api.auth.router - ERROR - Signup failed: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:20,552 - backend.external_services.supabase.client - ERROR - Supabase credentials not found in environment variables
+2025-05-01 15:34:20,552 - backend.external_services.supabase.client - ERROR - Failed to initialize Supabase client: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:20,552 - backend.external_services.supabase.auth_service - ERROR - Error during signup: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:20,552 - backend.api.auth.router - ERROR - Signup failed: Supabase credentials are missing. Please check your .env file.
+2025-05-01 15:34:29,140 - backend.api.main - INFO - API shutting down
+2025-05-01 15:34:30,645 - __main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 15:34:30,645 - __main__ - INFO - Starting Medical AI Chat application...
+2025-05-01 15:34:30,646 - __main__ - INFO - Project root: /Users/shmuel/dev/large_translate/largetranslator
+2025-05-01 15:34:30,646 - __main__ - INFO - Server will run at: http://0.0.0.0:8000
+2025-05-01 15:34:30,699 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 15:34:30,981 - backend.api.main - INFO - API starting up
+2025-05-01 15:34:36,801 - backend.external_services.supabase.client - INFO - Supabase client initialized successfully
+2025-05-01 15:34:38,376 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/signup "HTTP/2 200 OK"
+2025-05-01 15:34:38,377 - backend.external_services.supabase.auth_service - INFO - User created successfully: daven613us@gmail.com
+2025-05-01 15:34:38,378 - backend.api.auth.router - ERROR - Signup failed: 'NoneType' object has no attribute 'access_token'
+2025-05-01 15:34:45,274 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/signup "HTTP/2 429 Too Many Requests"
+2025-05-01 15:34:45,275 - backend.external_services.supabase.auth_service - ERROR - Error during signup: For security purposes, you can only request this after 52 seconds.
+2025-05-01 15:34:45,275 - backend.api.auth.router - ERROR - Signup failed: For security purposes, you can only request this after 52 seconds.
+2025-05-01 15:38:02,860 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/signup "HTTP/2 200 OK"
+2025-05-01 15:38:02,861 - backend.external_services.supabase.auth_service - INFO - User created successfully: daven613us@gmail.com
+2025-05-01 15:38:02,861 - backend.api.auth.router - ERROR - Signup failed: 'NoneType' object has no attribute 'access_token'
+2025-05-01 15:39:33,713 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/token?grant_type=password "HTTP/2 400 Bad Request"
+2025-05-01 15:39:33,715 - backend.external_services.supabase.auth_service - ERROR - Error during authentication: Email not confirmed
+2025-05-01 15:39:33,715 - backend.api.auth.router - ERROR - Login failed: Email not confirmed
+2025-05-01 15:41:37,825 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/token?grant_type=password "HTTP/2 200 OK"
+2025-05-01 15:41:37,831 - backend.external_services.supabase.auth_service - INFO - User authenticated successfully: daven613us@gmail.com
+2025-05-01 15:41:52,970 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/signup "HTTP/2 200 OK"
+2025-05-01 15:41:52,971 - backend.external_services.supabase.auth_service - INFO - User created successfully: daven613us@gmail.com
+2025-05-01 15:41:52,971 - backend.api.auth.router - ERROR - Signup failed: 'NoneType' object has no attribute 'access_token'
+2025-05-01 15:44:42,640 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/token?grant_type=password "HTTP/2 200 OK"
+2025-05-01 15:44:42,644 - backend.external_services.supabase.auth_service - INFO - User authenticated successfully: daven613us@gmail.com
+2025-05-01 15:50:40,890 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/token?grant_type=password "HTTP/2 200 OK"
+2025-05-01 15:50:40,893 - backend.external_services.supabase.auth_service - INFO - User authenticated successfully: daven613us@gmail.com
+2025-05-01 16:03:51,373 - backend.api.main - INFO - API shutting down
+2025-05-01 16:03:51,501 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:03:51,832 - backend.api.main - INFO - API starting up
+2025-05-01 16:04:10,443 - backend.api.main - INFO - API shutting down
+2025-05-01 16:04:10,543 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:04:10,806 - backend.api.main - INFO - API starting up
+2025-05-01 16:04:39,040 - backend.api.main - INFO - API shutting down
+2025-05-01 16:04:39,144 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:04:39,421 - backend.api.main - INFO - API starting up
+2025-05-01 16:04:49,633 - backend.api.main - INFO - API shutting down
+2025-05-01 16:04:49,729 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:04:50,005 - backend.api.main - INFO - API starting up
+2025-05-01 16:05:11,305 - backend.api.main - INFO - API shutting down
+2025-05-01 16:05:11,410 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:05:11,688 - backend.api.main - INFO - API starting up
+2025-05-01 16:05:23,211 - backend.api.main - INFO - API shutting down
+2025-05-01 16:05:23,317 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:13:29,622 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:13:51,382 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:15:12,132 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:15:12,468 - backend.api.main - INFO - API starting up
+2025-05-01 16:21:38,659 - backend.api.main - INFO - API shutting down
+2025-05-01 16:21:38,767 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:21:39,044 - backend.api.main - INFO - API starting up
+2025-05-01 16:23:41,483 - backend.api.main - INFO - API shutting down
+2025-05-01 16:23:41,604 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:23:41,893 - backend.api.main - INFO - API starting up
+2025-05-01 16:24:30,176 - backend.api.main - INFO - API shutting down
+2025-05-01 16:24:30,275 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:24:30,557 - backend.api.main - INFO - API starting up
+2025-05-01 16:27:28,609 - backend.api.main - INFO - API shutting down
+2025-05-01 16:27:28,726 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:27:29,013 - backend.api.main - INFO - API starting up
+2025-05-01 16:28:29,762 - backend.api.main - INFO - API shutting down
+2025-05-01 16:28:29,875 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:28:30,202 - backend.api.main - INFO - API starting up
+2025-05-01 16:29:52,924 - backend.api.main - INFO - API shutting down
+2025-05-01 16:29:53,018 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:29:53,308 - backend.api.main - INFO - API starting up
+2025-05-01 16:30:52,268 - backend.api.main - INFO - API shutting down
+2025-05-01 16:30:52,402 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:30:52,780 - backend.api.main - INFO - API starting up
+2025-05-01 16:31:53,340 - backend.api.main - INFO - API shutting down
+2025-05-01 16:31:53,433 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:31:53,719 - backend.api.main - INFO - API starting up
+2025-05-01 16:37:16,739 - backend.api.main - INFO - API shutting down
+2025-05-01 16:37:16,841 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:37:17,130 - backend.api.main - INFO - API starting up
+2025-05-01 16:39:18,599 - backend.api.main - INFO - API shutting down
+2025-05-01 16:39:18,709 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:39:19,031 - backend.api.main - INFO - API starting up
+2025-05-01 16:45:32,515 - backend.external_services.supabase.client - INFO - Supabase client initialized successfully
+2025-05-01 16:45:33,152 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/auth/v1/token?grant_type=password "HTTP/2 200 OK"
+2025-05-01 16:45:33,155 - backend.external_services.supabase.auth_service - INFO - User authenticated successfully: daven613us@gmail.com
+2025-05-01 16:45:33,166 - backend.external_services.supabase.auth_service - ERROR - Error getting user from token: SyncGoTrueClient.set_session() missing 1 required positional argument: 'refresh_token'
+2025-05-01 16:45:55,960 - backend.external_services.supabase.auth_service - ERROR - Error getting user from token: SyncGoTrueClient.set_session() missing 1 required positional argument: 'refresh_token'
+2025-05-01 16:50:19,732 - backend.external_services.supabase.auth_service - ERROR - Error getting user from token: SyncGoTrueClient.set_session() missing 1 required positional argument: 'refresh_token'
+2025-05-01 16:50:30,216 - backend.external_services.supabase.auth_service - ERROR - Error getting user from token: SyncGoTrueClient.set_session() missing 1 required positional argument: 'refresh_token'
+2025-05-01 16:52:21,942 - backend.api.main - INFO - API shutting down
+2025-05-01 16:52:22,068 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:52:22,355 - backend.api.main - INFO - API starting up
+2025-05-01 16:52:51,377 - backend.api.main - INFO - API shutting down
+2025-05-01 16:52:51,470 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:52:51,742 - backend.api.main - INFO - API starting up
+2025-05-01 16:53:27,640 - backend.api.main - INFO - API shutting down
+2025-05-01 16:53:27,732 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 16:53:28,001 - backend.api.main - INFO - API starting up
+2025-05-01 17:04:04,826 - backend.external_services.supabase.client - INFO - Supabase client initialized successfully
+2025-05-01 17:04:05,479 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:04:05,587 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:04:05,588 - backend.external_services.supabase.storage_service - ERROR - Failed to initialize storage: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:04:05,588 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:04:05,588 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:04:30,260 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:04:30,370 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:04:30,371 - backend.external_services.supabase.storage_service - ERROR - Failed to initialize storage: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:04:30,371 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:04:30,371 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:16:17,598 - backend.api.main - INFO - API shutting down
+2025-05-01 17:16:17,709 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 17:16:18,006 - backend.api.main - INFO - API starting up
+2025-05-01 17:22:53,332 - backend.external_services.supabase.client - INFO - Supabase client initialized successfully
+2025-05-01 17:22:53,878 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:23:03,667 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:23:03,756 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:23:03,757 - backend.external_services.supabase.storage_service - ERROR - Failed to initialize storage: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:23:03,757 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:23:03,757 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:25:12,633 - backend.api.main - INFO - API shutting down
+2025-05-01 17:25:12,742 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 17:25:13,031 - backend.api.main - INFO - API starting up
+2025-05-01 17:26:29,154 - backend.external_services.supabase.client - INFO - Supabase client initialized successfully
+2025-05-01 17:26:29,889 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:26:30,064 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:26:30,065 - backend.external_services.supabase.storage_service - ERROR - Error checking/creating bucket: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:26:30,244 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:26:30,245 - backend.external_services.supabase.storage_service - INFO - Bucket user-text-files already exists or is accessible
+2025-05-01 17:26:30,434 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/user-text-files/1236878e-5221-48db-99e3-890cd3a83e1f/choshen%20first%20siman.txt "HTTP/2 400 Bad Request"
+2025-05-01 17:26:30,435 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:26:30,435 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:26:39,006 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:26:39,142 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:26:39,143 - backend.external_services.supabase.storage_service - ERROR - Error checking/creating bucket: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:26:39,272 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:26:39,272 - backend.external_services.supabase.storage_service - INFO - Bucket user-text-files already exists or is accessible
+2025-05-01 17:26:39,483 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/user-text-files/1236878e-5221-48db-99e3-890cd3a83e1f/choshen%20first%20siman.txt "HTTP/2 400 Bad Request"
+2025-05-01 17:26:39,483 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:26:39,484 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:26:41,925 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:26:42,077 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:26:42,078 - backend.external_services.supabase.storage_service - ERROR - Error checking/creating bucket: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:26:42,215 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:26:42,216 - backend.external_services.supabase.storage_service - INFO - Bucket user-text-files already exists or is accessible
+2025-05-01 17:26:42,388 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:26:52,056 - httpx - INFO - HTTP Request: GET https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 200 OK"
+2025-05-01 17:26:52,210 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/bucket "HTTP/2 400 Bad Request"
+2025-05-01 17:26:52,211 - backend.external_services.supabase.storage_service - ERROR - Error checking/creating bucket: {'statusCode': 400, 'error': Error, 'message': body/name must be string}
+2025-05-01 17:26:52,346 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/list/user-text-files "HTTP/2 200 OK"
+2025-05-01 17:26:52,347 - backend.external_services.supabase.storage_service - INFO - Bucket user-text-files already exists or is accessible
+2025-05-01 17:26:52,548 - httpx - INFO - HTTP Request: POST https://evggupjntgxqzydvqsel.supabase.co/storage/v1/object/user-text-files/1236878e-5221-48db-99e3-890cd3a83e1f/choshen%20first%20siman.txt "HTTP/2 400 Bad Request"
+2025-05-01 17:26:52,548 - backend.external_services.supabase.storage_service - ERROR - Failed to upload file: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:26:52,548 - backend.api.files.router - ERROR - File upload failed: {'statusCode': 404, 'error': Bucket not found, 'message': Bucket not found}
+2025-05-01 17:27:46,445 - backend.api.main - INFO - API shutting down
+2025-05-01 17:27:46,533 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 17:27:46,817 - backend.api.main - INFO - API starting up
+2025-05-01 17:28:33,340 - backend.api.main - INFO - API shutting down
+2025-05-01 17:28:33,446 - __mp_main__ - INFO - Loaded environment variables from /Users/shmuel/dev/large_translate/largetranslator/backend/.env
+2025-05-01 17:28:33,745 - backend.api.main - INFO - API starting up

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Management Test Page</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .section {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .auth-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .logged-in {
+      background-color: #e7f7e7;
+      color: #2e7d32;
+      border: 1px solid #c3e6c3;
+    }
+    .logged-out {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+    input {
+      width: 200px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4a90e2;
+    }
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin-right: 5px;
+    }
+    button:hover {
+      background-color: #3b7dcd;
+    }
+    .logout-btn {
+      background-color: #f44336;
+    }
+    .logout-btn:hover {
+      background-color: #d32f2f;
+    }
+    .file-list {
+      margin-top: 20px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .file-list th, .file-list td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .file-list th {
+      background-color: #f0f0f0;
+      font-weight: 600;
+    }
+    .file-list tr:hover {
+      background-color: #f9f9f9;
+    }
+    .delete-btn {
+      background-color: #f44336;
+    }
+    .delete-btn:hover {
+      background-color: #d32f2f;
+    }
+    .download-btn {
+      background-color: #4caf50;
+    }
+    .download-btn:hover {
+      background-color: #388e3c;
+    }
+    .upload-section {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px dashed #ccc;
+      border-radius: 5px;
+    }
+    .status-message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #e8f5e9;
+      color: #388e3c;
+      border: 1px solid #c8e6c9;
+    }
+    .error {
+      background-color: #ffebee;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <section class="section auth-section">
+    <h2>Authentication</h2>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div>
+        <input type="email" id="auth-email" placeholder="Email">
+        <input type="password" id="auth-password" placeholder="Password">
+        <button id="login-btn">Login</button>
+        <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
+      </div>
+      <div id="auth-status" class="auth-status logged-out">Not logged in</div>
+    </div>
+  </section>
+  
+  <section class="section">
+    <h2>File Management</h2>
+    <div id="file-operations" style="display: none;">
+      <!-- Upload Section -->
+      <div class="upload-section">
+        <h3>Upload Text File</h3>
+        <input type="file" id="file-upload" accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.py,.java,.c,.cpp,.h,.rb,.php">
+        <button id="upload-btn">Upload</button>
+        <div id="upload-status" class="status-message hidden"></div>
+      </div>
+      
+      <!-- File List Section -->
+      <div>
+        <h3>Your Files</h3>
+        <button id="refresh-btn">Refresh List</button>
+        <div id="list-status" class="status-message hidden"></div>
+        <div id="file-list-container">
+          <table class="file-list">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Size</th>
+                <th>Type</th>
+                <th>Uploaded</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="file-list-body">
+              <tr>
+                <td colspan="5" style="text-align: center;">No files found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="login-required" style="display: block;">
+      <p>Please login to manage your files.</p>
+    </div>
+  </section>
+
+  <script>
+    // Base API URL - change this to match your API endpoint
+    const API_BASE_URL = 'http://localhost:8000/api';
+
+    // Get authentication elements
+    const authStatus = document.getElementById('auth-status');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    
+    // Get file management elements
+    const fileOperations = document.getElementById('file-operations');
+    const loginRequired = document.getElementById('login-required');
+    const fileUpload = document.getElementById('file-upload');
+    const uploadBtn = document.getElementById('upload-btn');
+    const uploadStatus = document.getElementById('upload-status');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const listStatus = document.getElementById('list-status');
+    const fileListBody = document.getElementById('file-list-body');
+
+    // Check login status on page load
+    document.addEventListener('DOMContentLoaded', checkLoginStatus);
+
+    // Handle authentication
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    
+    // Handle file operations
+    uploadBtn.addEventListener('click', handleFileUpload);
+    refreshBtn.addEventListener('click', loadFileList);
+
+    // Check login status and update UI accordingly
+    function checkLoginStatus() {
+      const token = sessionStorage.getItem('auth_token');
+      const userEmail = sessionStorage.getItem('user_email');
+      
+      if (token && userEmail) {
+        // User is logged in
+        authStatus.textContent = `Logged in as: ${userEmail}`;
+        authStatus.className = 'auth-status logged-in';
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        
+        // Hide email/password inputs when logged in
+        authEmail.style.display = 'none';
+        authPassword.style.display = 'none';
+        
+        // Show file operations
+        fileOperations.style.display = 'block';
+        loginRequired.style.display = 'none';
+        
+        // Load file list when user is logged in
+        loadFileList();
+      } else {
+        // User is not logged in
+        authStatus.textContent = 'Not logged in';
+        authStatus.className = 'auth-status logged-out';
+        loginBtn.style.display = 'inline-block';
+        logoutBtn.style.display = 'none';
+        
+        // Show email/password inputs when logged out
+        authEmail.style.display = 'inline-block';
+        authPassword.style.display = 'inline-block';
+        
+        // Hide file operations
+        fileOperations.style.display = 'none';
+        loginRequired.style.display = 'block';
+      }
+    }
+
+    // Handle login
+    async function handleLogin() {
+      const email = authEmail.value;
+      const password = authPassword.value;
+      
+      if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Save auth data exactly as in auth-test.html
+          if (data.token && data.token.access_token) {
+            sessionStorage.setItem('auth_token', data.token.access_token);
+            if (data.user && data.user.email) {
+              sessionStorage.setItem('user_email', data.user.email);
+              sessionStorage.setItem('user_id', data.user.id);
+            }
+            // Update login status
+            checkLoginStatus();
+            // Clear inputs
+            authEmail.value = '';
+            authPassword.value = '';
+          }
+        } else {
+          alert(`Login failed: ${data.detail || 'Invalid credentials'}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    // Handle logout
+    function handleLogout() {
+      // Clear auth data
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user_email');
+      sessionStorage.removeItem('user_id');
+      
+      // Update status
+      checkLoginStatus();
+    }
+
+    // Get auth token for API requests
+    function getAuthToken() {
+      return sessionStorage.getItem('auth_token');
+    }
+
+    // Handle file upload
+    async function handleFileUpload() {
+      if (!fileUpload.files || fileUpload.files.length === 0) {
+        showStatus(uploadStatus, 'Please select a file to upload', 'error');
+        return;
+      }
+      
+      const file = fileUpload.files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/files/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+          },
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showStatus(uploadStatus, `File "${data.file_name}" uploaded successfully!`, 'success');
+          fileUpload.value = '';
+          loadFileList();
+        } else {
+          const errorData = await response.json();
+          showStatus(uploadStatus, `Upload failed: ${errorData.detail || 'Unknown error'}`, 'error');
+        }
+      } catch (error) {
+        showStatus(uploadStatus, `Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Load file list from API
+    async function loadFileList() {
+      try {
+        showStatus(listStatus, 'Loading files...', 'success');
+        
+        const response = await fetch(`${API_BASE_URL}/files`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          renderFileList(data.files);
+          showStatus(listStatus, '', 'hidden');
+        } else {
+          const errorData = await response.json();
+          showStatus(listStatus, `Failed to load files: ${errorData.detail || 'Unknown error'}`, 'error');
+        }
+      } catch (error) {
+        showStatus(listStatus, `Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Render file list to table
+    function renderFileList(files) {
+      if (!files || files.length === 0) {
+        fileListBody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No files found</td></tr>';
+        return;
+      }
+      
+      let html = '';
+      
+      files.forEach(file => {
+        const fileName = file.file_name;
+        const fileSize = formatFileSize(file.file_size);
+        const fileType = file.content_type || 'text/plain';
+        const uploadDate = formatDate(file.created_at);
+        
+        html += `
+          <tr>
+            <td>${fileName}</td>
+            <td>${fileSize}</td>
+            <td>${fileType}</td>
+            <td>${uploadDate}</td>
+            <td>
+              <button class="download-btn" onclick="downloadFile('${fileName}')">View</button>
+              <button class="delete-btn" onclick="deleteFile('${fileName}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      fileListBody.innerHTML = html;
+    }
+
+    // Download/view file
+    async function downloadFile(fileName) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/files/${fileName}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Create a modal to display the file content
+          const modal = document.createElement('div');
+          modal.style.position = 'fixed';
+          modal.style.top = '0';
+          modal.style.left = '0';
+          modal.style.width = '100%';
+          modal.style.height = '100%';
+          modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+          modal.style.display = 'flex';
+          modal.style.justifyContent = 'center';
+          modal.style.alignItems = 'center';
+          modal.style.zIndex = '1000';
+          
+          const modalContent = document.createElement('div');
+          modalContent.style.backgroundColor = 'white';
+          modalContent.style.padding = '20px';
+          modalContent.style.borderRadius = '8px';
+          modalContent.style.width = '80%';
+          modalContent.style.maxWidth = '800px';
+          modalContent.style.maxHeight = '80vh';
+          modalContent.style.overflow = 'auto';
+          
+          const closeButton = document.createElement('button');
+          closeButton.textContent = 'Close';
+          closeButton.style.marginBottom = '10px';
+          closeButton.addEventListener('click', () => {
+            document.body.removeChild(modal);
+          });
+          
+          const fileNameHeading = document.createElement('h3');
+          fileNameHeading.textContent = fileName;
+          
+          const contentPre = document.createElement('pre');
+          contentPre.style.whiteSpace = 'pre-wrap';
+          contentPre.style.wordBreak = 'break-word';
+          contentPre.style.backgroundColor = '#f5f5f5';
+          contentPre.style.padding = '10px';
+          contentPre.style.borderRadius = '4px';
+          contentPre.style.maxHeight = '60vh';
+          contentPre.style.overflow = 'auto';
+          contentPre.textContent = data.content;
+          
+          modalContent.appendChild(closeButton);
+          modalContent.appendChild(fileNameHeading);
+          modalContent.appendChild(contentPre);
+          modal.appendChild(modalContent);
+          
+          document.body.appendChild(modal);
+        } else {
+          const errorData = await response.json();
+          alert(`Failed to download file: ${errorData.detail || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    // Delete file
+    async function deleteFile(fileName) {
+      if (!confirm(`Are you sure you want to delete "${fileName}"?`)) {
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/files/${fileName}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${getAuthToken()}`
+          }
+        });
+        
+        if (response.ok) {
+          showStatus(listStatus, `File "${fileName}" deleted successfully!`, 'success');
+          loadFileList();
+        } else {
+          const errorData = await response.json();
+          showStatus(listStatus, `Failed to delete file: ${errorData.detail || 'Unknown error'}`, 'error');
+        }
+      } catch (error) {
+        showStatus(listStatus, `Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Helper: Show status message
+    function showStatus(element, message, type) {
+      if (!message) {
+        element.className = 'status-message hidden';
+        return;
+      }
+      
+      element.textContent = message;
+      element.className = `status-message ${type}`;
+    }
+    
+    // Helper: Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Helper: Format date
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleString();
+    }
+    
+    // Make downloadFile and deleteFile accessible globally
+    window.downloadFile = downloadFile;
+    window.deleteFile = deleteFile;
+  </script>
+</body>
+</html> 
