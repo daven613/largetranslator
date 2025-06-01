@@ -1,7 +1,7 @@
 // Large Translator Frontend - New Translation Logic
 
 let currentTranslation = null;
-let statusPollingInterval = null;
+// Removed statusPollingInterval as we're removing automatic polling
 
 document.addEventListener('DOMContentLoaded', () => {
     // Redirect if not authenticated
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeTranslation) {
                 currentTranslation = activeTranslation;
                 showCurrentTranslation();
-                startStatusPolling();
+                // Removed automatic polling - user must manually refresh
             }
         } catch (error) {
             console.error('Failed to check for active translations:', error);
@@ -125,12 +125,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 prompt
             );
 
-            UI.showSuccess('Translation started successfully!');
+            UI.showSuccess('Translation started successfully! Use the refresh button to check progress.');
             
             // Set current translation and show status
             currentTranslation = translationResponse;
             showCurrentTranslation();
-            startStatusPolling();
+            // Removed automatic polling - user must manually refresh
             
             // Clear form
             translationPrompt.value = '';
@@ -199,9 +199,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     ` : ''}
                     
-                    ${currentTranslation.status === 'failed' ? `
+                    ${currentTranslation.status === 'failed' || currentTranslation.status === 'completed_with_errors' ? `
                         <button class="btn btn-small btn-danger" onclick="retryTranslation('${currentTranslation.id}')">
-                            🔄 Retry
+                            🔄 Retry${currentTranslation.status === 'completed_with_errors' ? ' Failed Chunks' : ''}
                         </button>
                     ` : ''}
                     
@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         🔄 Refresh Status
                     </button>
                     
-                    ${currentTranslation.status === 'completed' || currentTranslation.status === 'failed' ? `
+                    ${currentTranslation.status === 'completed' || currentTranslation.status === 'failed' || currentTranslation.status === 'completed_with_errors' ? `
                         <button class="btn btn-small btn-secondary" onclick="clearCurrentTranslation()">
                             ✕ Clear
                         </button>
@@ -219,22 +219,9 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // Start polling for translation status updates
-    function startStatusPolling() {
-        // Clear existing interval
-        if (statusPollingInterval) {
-            clearInterval(statusPollingInterval);
-        }
+    // Removed startStatusPolling() function - no more automatic polling
 
-        // Start polling if translation is active
-        if (currentTranslation && (currentTranslation.status === 'pending' || currentTranslation.status === 'in_progress')) {
-            statusPollingInterval = setInterval(() => {
-                pollTranslationStatus();
-            }, 3000); // Poll every 3 seconds
-        }
-    }
-
-    // Poll translation status
+    // Poll translation status (now only used for manual refresh)
     async function pollTranslationStatus() {
         if (!currentTranslation) return;
 
@@ -243,19 +230,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             currentTranslation = updatedTranslation;
             
-            // If job is complete or failed, stop polling
-            if (currentTranslation.status === 'completed' || currentTranslation.status === 'failed') {
-                if (statusPollingInterval) {
-                    clearInterval(statusPollingInterval);
-                    statusPollingInterval = null;
-                }
-                
-                // Show notification
-                if (currentTranslation.status === 'completed') {
-                    UI.showSuccess(`Translation completed!`);
-                } else if (currentTranslation.status === 'failed') {
-                    UI.showError(`Translation failed.`);
-                }
+            // Show notification for completed translations
+            if (currentTranslation.status === 'completed') {
+                UI.showSuccess(`Translation completed!`);
+            } else if (currentTranslation.status === 'failed') {
+                UI.showError(`Translation failed.`);
+            } else if (currentTranslation.status === 'completed_with_errors') {
+                UI.showAlert(`Translation completed with errors! Some chunks may have failed.`, 'warning');
             }
             
             renderCurrentTranslation();
@@ -349,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Set as current translation
             currentTranslation = newTranslation;
             showCurrentTranslation();
-            startStatusPolling();
+            // Removed automatic polling - user must manually refresh
         } catch (error) {
             UI.showError(`Failed to retry translation: ${error.message}`);
         }
@@ -366,18 +347,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.clearCurrentTranslation = function() {
         currentTranslation = null;
-        if (statusPollingInterval) {
-            clearInterval(statusPollingInterval);
-            statusPollingInterval = null;
-        }
+        // No need to clear interval since we removed automatic polling
         showCurrentTranslation();
         UI.showAlert('Current translation cleared', 'info');
     };
 
-    // Cleanup intervals when page unloads
-    window.addEventListener('beforeunload', () => {
-        if (statusPollingInterval) {
-            clearInterval(statusPollingInterval);
-        }
-    });
+    // Removed beforeunload event listener since there's no more polling interval to clean up
 }); 

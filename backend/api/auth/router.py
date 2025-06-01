@@ -25,7 +25,7 @@ async def signup(user_data: schemas.UserSignup):
         HTTPException: If signup fails
     """
     try:
-        response = SupabaseAuthService.sign_up(
+        response = await SupabaseAuthService.sign_up(
             email=user_data.email,
             password=user_data.password
         )
@@ -66,7 +66,7 @@ async def login(user_data: schemas.UserLogin):
         HTTPException: If login fails
     """
     try:
-        response = SupabaseAuthService.sign_in(
+        response = await SupabaseAuthService.sign_in(
             email=user_data.email,
             password=user_data.password
         )

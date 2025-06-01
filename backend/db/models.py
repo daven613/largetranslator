@@ -70,24 +70,33 @@ class ChunkBase(BaseModel):
     sequence_number: int
     content: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    chunk_type: str = "original"  # 'original', 'translated', etc.
+    target_language: Optional[str] = None  # For translated chunks
 
 class ChunkCreate(ChunkBase):
     """Model for creating a new chunk."""
     document_id: UUID4
-    chunk_set_id: UUID4
+    chunk_set_id: Optional[UUID4] = None
+    parent_chunk_id: Optional[UUID4] = None  # For translated chunks
+    translation_id: Optional[UUID4] = None  # For translated chunks
 
 class ChunkUpdate(BaseModel):
     """Model for updating an existing chunk."""
     content: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     chunk_set_id: Optional[UUID4] = None
+    chunk_type: Optional[str] = None
+    target_language: Optional[str] = None
 
 class Chunk(ChunkBase):
     """Model representing a chunk in the database."""
     id: UUID4
     document_id: UUID4
     chunk_set_id: Optional[UUID4] = None
+    parent_chunk_id: Optional[UUID4] = None
+    translation_id: Optional[UUID4] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
     embedding: Optional[List[float]] = None
 
     class Config(Config):
@@ -133,23 +142,31 @@ class Translation(TranslationBase):
         """Pydantic configuration."""
         orm_mode = True
 
-# Translated chunk models
+class TranslationWithChunks(Translation):
+    """Model representing a translation with its translated chunks."""
+    translated_chunks: List[Chunk] = []  # Now using unified Chunk model
+    
+    model_config = {"extra": "allow"}
+
+# Legacy models for backward compatibility (deprecated)
 class TranslatedChunkBase(BaseModel):
-    """Base model for translated chunk data."""
+    """DEPRECATED: Use Chunk with chunk_type='translated' instead."""
     translated_content: str
     sequence_number: int
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     
 class TranslatedChunkCreate(TranslatedChunkBase):
-    """Model for creating a new translated chunk."""
+    """DEPRECATED: Use ChunkCreate with chunk_type='translated' instead."""
     translation_id: UUID4
     chunk_id: UUID4
     
 class TranslatedChunkUpdate(BaseModel):
-    """Model for updating an existing translated chunk."""
+    """DEPRECATED: Use ChunkUpdate instead."""
     translated_content: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
     
 class TranslatedChunk(TranslatedChunkBase):
-    """Model representing a translated chunk in the database."""
+    """DEPRECATED: Use Chunk with chunk_type='translated' instead."""
     id: UUID4
     translation_id: UUID4
     chunk_id: UUID4
@@ -159,9 +176,3 @@ class TranslatedChunk(TranslatedChunkBase):
     class Config(Config):
         """Pydantic configuration."""
         orm_mode = True
-
-class TranslationWithChunks(Translation):
-    """Model representing a translation with its translated chunks."""
-    translated_chunks: List[TranslatedChunk] = []
-    
-    model_config = {"extra": "allow"}

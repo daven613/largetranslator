@@ -61,7 +61,12 @@ class ChunkResponse(BaseModel):
     sequence_number: int
     content: str
     created_at: datetime
+    updated_at: Optional[datetime] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    chunk_type: str = "original"
+    parent_chunk_id: Optional[UUID4] = None
+    translation_id: Optional[UUID4] = None
+    target_language: Optional[str] = None
     
     class Config(Config):
         """Pydantic configuration."""
@@ -74,10 +79,14 @@ class ChunkListResponse(BaseModel):
 class ChunkCreateRequest(BaseModel):
     """Request model for creating a chunk."""
     document_id: UUID4
-    chunk_set_id: UUID4
+    chunk_set_id: Optional[UUID4] = None
     sequence_number: int
     content: str
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    chunk_type: str = "original"
+    parent_chunk_id: Optional[UUID4] = None
+    translation_id: Optional[UUID4] = None
+    target_language: Optional[str] = None
     
     class Config(Config):
         """Pydantic configuration."""
@@ -88,6 +97,8 @@ class ChunkUpdateRequest(BaseModel):
     content: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
     chunk_set_id: Optional[UUID4] = None
+    chunk_type: Optional[str] = None
+    target_language: Optional[str] = None
 
 # Chunking request schema
 class ChunkingRequest(BaseModel):

@@ -4,7 +4,8 @@ Supabase client module.
 import os
 import logging
 from typing import Optional
-from supabase import create_client, Client
+import httpx
+from supabase import create_client, Client, ClientOptions
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,21 @@ def initialize_supabase() -> Client:
         raise Exception("Supabase URL or SUPABASE_SERVICE_ROLE_KEY is missing for service client.")
     
     try:
-        client = create_client(supabase_url, supabase_service_key)
-        logger.info("Supabase service client initialized successfully using SUPABASE_SERVICE_ROLE_KEY")
+        # Create client options with proper configuration
+        # Note: For now, we'll use the default HTTP client since custom http_client
+        # option is causing issues. The performance improvement will come from
+        # the direct PostgreSQL connections instead.
+        options = ClientOptions(
+            schema="public"
+        )
+        
+        client = create_client(
+            supabase_url, 
+            supabase_service_key,
+            options=options
+        )
+        logger.info("Supabase service client initialized successfully")
+        logger.info("Note: Using direct PostgreSQL connections for high-performance operations")
         return client
     except Exception as e:
         logger.error(f"Failed to initialize Supabase client: {str(e)}")

@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, UUID4, Field
 
 from ...helpers.json_utils import Config
-from ...db.models import Translation, TranslatedChunk
+from ...db.models import Translation
 
 # Translation schemas
 class TranslationCreateRequest(BaseModel):
@@ -37,16 +37,20 @@ class TranslationListResponse(BaseModel):
     """Response model for listing translations."""
     translations: List[TranslationResponse]
 
-# Translated chunk schemas
+# Unified chunk schemas for translated chunks
 class TranslatedChunkResponse(BaseModel):
-    """Response model for a translated chunk."""
+    """Response model for a translated chunk using unified chunk design."""
     id: UUID4
-    translation_id: UUID4
-    chunk_id: UUID4
-    translated_content: str
+    document_id: UUID4
     sequence_number: int
+    content: str  # This is the translated content
+    chunk_type: str = "translated"
+    parent_chunk_id: Optional[UUID4] = None  # Reference to original chunk
+    translation_id: Optional[UUID4] = None
+    target_language: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
     created_at: datetime
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
     
     class Config(Config):
         """Pydantic configuration."""
@@ -58,4 +62,19 @@ class TranslatedChunkListResponse(BaseModel):
 
 class TranslationWithChunksResponse(TranslationResponse):
     """Response model for a translation with its translated chunks."""
-    translated_chunks: List[TranslatedChunkResponse] 
+    translated_chunks: List[TranslatedChunkResponse]
+
+# Chunk pair response for side-by-side comparison
+class ChunkPairResponse(BaseModel):
+    """Response model for original and translated chunk pair."""
+    original_chunk: Dict[str, Any]
+    translated_chunk: Optional[TranslatedChunkResponse] = None
+    sequence_number: int
+    
+class TranslationDetailsResponse(BaseModel):
+    """Response model for translation details with chunk pairs."""
+    translation: TranslationResponse
+    chunk_pairs: List[ChunkPairResponse]
+    success_rate: float
+    error_count: int
+    total_chunks: int 

@@ -207,6 +207,7 @@
       <div class="progress-bar" style="height: 10px;">
         <div id="translation-progress-fill" class="progress-fill" style="width: 0%;"></div>
       </div>
+      <button id="refresh-status-btn" style="margin-top: 10px;">🔄 Refresh Status</button>
     </div>
   </section>
 
@@ -478,47 +479,64 @@
      }
      
      async function monitorTranslation() {
-       const checkStatus = async () => {
-         try {
-           const response = await fetch(`${API_BASE_URL}/translations/${currentTranslationId}`, {
-             headers: getAuthHeaders()
-           });
-           
-           if (response.ok) {
-             const data = await response.json();
-             const progress = data.total_chunks > 0 ? (data.completed_chunks / data.total_chunks) * 100 : 0;
-             
-             document.getElementById('progress-chunks').textContent = data.completed_chunks;
-             document.getElementById('total-chunks').textContent = data.total_chunks;
-             document.getElementById('translation-progress-fill').style.width = `${progress}%`;
-             
-             // Enable download button if there are any completed chunks
-             if (data.completed_chunks > 0) {
-               document.getElementById('download-btn').disabled = false;
-             }
-             
-             if (data.status === 'completed') {
-               updateStepStatus(translationSection, 'completed');
-               showStatus('translation-result', `✅ Translation completed! (${data.completed_chunks}/${data.total_chunks} chunks)`, 'success');
-               updateProgress(4, 5, 'Translation completed, ready to download');
-               
-               return; // Stop monitoring
-             } else if (data.status === 'failed') {
-               updateStepStatus(translationSection, 'error');
-               showStatus('translation-result', `❌ Translation failed`, 'error');
-               return; // Stop monitoring
-             }
-             
-             // Continue monitoring
-             setTimeout(checkStatus, 2000);
-           }
-         } catch (error) {
-           console.error('Error monitoring translation:', error);
-           setTimeout(checkStatus, 2000);
-         }
-       };
+       // Show the progress section and refresh button
+       document.getElementById('translation-progress').style.display = 'block';
        
-       checkStatus();
+       // Do an initial status check
+       await checkTranslationStatus();
+     }
+     
+     async function checkTranslationStatus() {
+       try {
+         const response = await fetch(`${API_BASE_URL}/translations/${currentTranslationId}`, {
+           headers: getAuthHeaders()
+         });
+         
+         if (response.ok) {
+           const data = await response.json();
+           const progress = data.total_chunks > 0 ? (data.completed_chunks / data.total_chunks) * 100 : 0;
+           
+           document.getElementById('progress-chunks').textContent = data.completed_chunks;
+           document.getElementById('total-chunks').textContent = data.total_chunks;
+           document.getElementById('translation-progress-fill').style.width = `${progress}%`;
+           
+           // Enable download button if there are any completed chunks
+           if (data.completed_chunks > 0) {
+             document.getElementById('download-btn').disabled = false;
+           }
+           
+           // Update status based on translation state
+           if (data.status === 'completed') {
+             updateStepStatus(translationSection, 'completed');
+             showStatus('translation-result', `✅ Translation completed! (${data.completed_chunks}/${data.total_chunks} chunks)`, 'success');
+             updateProgress(4, 5, 'Translation completed, ready to download');
+             
+             // Hide refresh button when completed
+             document.getElementById('refresh-status-btn').style.display = 'none';
+           } else if (data.status === 'completed_with_errors') {
+             updateStepStatus(translationSection, 'completed');
+             showStatus('translation-result', `⚠️ Translation completed with errors! (${data.completed_chunks}/${data.total_chunks} chunks)`, 'warning');
+             updateProgress(4, 5, 'Translation completed with errors, partial download available');
+             
+             // Hide refresh button when completed
+             document.getElementById('refresh-status-btn').style.display = 'none';
+           } else if (data.status === 'failed') {
+             updateStepStatus(translationSection, 'error');
+             showStatus('translation-result', `❌ Translation failed`, 'error');
+             
+             // Hide refresh button when failed
+             document.getElementById('refresh-status-btn').style.display = 'none';
+           } else {
+             // Still in progress - show current status
+             showStatus('translation-result', `🔄 Translation in progress... (${data.completed_chunks}/${data.total_chunks} chunks)`, 'info');
+           }
+         } else {
+           showStatus('translation-result', `❌ Error checking status: ${response.status}`, 'error');
+         }
+       } catch (error) {
+         console.error('Error checking translation status:', error);
+         showStatus('translation-result', `❌ Error checking status: ${error.message}`, 'error');
+       }
      }
      
      async function downloadTranslation() {
@@ -585,6 +603,7 @@
      document.getElementById('chunk-file-btn').addEventListener('click', chunkFile);
      document.getElementById('start-translation-btn').addEventListener('click', startTranslation);
      document.getElementById('download-btn').addEventListener('click', downloadTranslation);
+     document.getElementById('refresh-status-btn').addEventListener('click', checkTranslationStatus);
   </script>
 </body>
 </html> 

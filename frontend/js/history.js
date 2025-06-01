@@ -169,6 +169,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
+                    <div class="job-status">
+                        <span class="status-badge ${getStatusClass(job.status)}">${getStatusText(job.status)}</span>
+                        ${getProgressHTML(job)}
+                    </div>
+                    
+                    <div class="job-meta">
+                        <span class="job-date">${formatDate(job.created_at)}</span>
+                        <span class="job-model">${job.ai_model}</span>
+                    </div>
+                    
                     <div class="job-actions">
                         ${job.completed_chunks > 0 ? `
                             <button class="btn btn-small btn-success" onclick="downloadTranslation('${job.id}')">
@@ -179,18 +189,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                         ` : ''}
                         
-                        ${job.status === 'failed' ? `
-                            <button class="btn btn-small btn-danger" onclick="retryTranslation('${job.id}')">
-                                🔄 Retry
+                        <button class="btn btn-small btn-primary" onclick="viewTranslationDetails('${job.id}')">
+                            🔍 View Details
+                        </button>
+                        
+                        ${job.status === 'failed' || job.status === 'completed_with_errors' ? `
+                            <button class="btn btn-small btn-warning" onclick="retryTranslation('${job.id}')">
+                                🔄 Retry${job.status === 'completed_with_errors' ? ' Failed Chunks' : ''}
                             </button>
                         ` : ''}
                         
-                        <button class="btn btn-small btn-secondary" onclick="refreshJobStatus('${job.id}')">
-                            🔄 Refresh Status
-                        </button>
-                        
-                        <button class="btn btn-small btn-danger" onclick="deleteTranslation('${job.id}')" 
-                                title="Delete this translation job">
+                        <button class="btn btn-small btn-danger" onclick="deleteTranslation('${job.id}')">
                             🗑️ Delete
                         </button>
                     </div>
@@ -226,7 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 allTranslations[jobIndex] = translation;
                 
                 // If job is complete or failed, stop polling
-                if (translation.status === 'completed' || translation.status === 'failed') {
+                if (translation.status === 'completed' || translation.status === 'failed' || translation.status === 'completed_with_errors') {
                     if (statusPollingIntervals[translationId]) {
                         clearInterval(statusPollingIntervals[translationId]);
                         delete statusPollingIntervals[translationId];
@@ -307,6 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
         UI.showAlert('Preview functionality coming soon!', 'info');
     };
 
+    window.viewTranslationDetails = function(translationId) {
+        // Redirect to the translation details page with the translation ID
+        window.location.href = `translation-details.html?id=${translationId}`;
+    };
+
     window.retryTranslation = async function(translationId) {
         try {
             // Get the original translation details
@@ -377,4 +391,53 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload', () => {
         Object.values(statusPollingIntervals).forEach(clearInterval);
     });
+
+    // Helper functions for status display
+    function getStatusClass(status) {
+        const statusClasses = {
+            'pending': 'status-pending',
+            'in_progress': 'status-in-progress',
+            'completed': 'status-completed',
+            'completed_with_errors': 'status-completed-with-errors',
+            'failed': 'status-failed'
+        };
+        return statusClasses[status] || 'status-unknown';
+    }
+
+    function getStatusText(status) {
+        const statusTexts = {
+            'pending': 'Pending',
+            'in_progress': 'In Progress',
+            'completed': 'Completed',
+            'completed_with_errors': 'Completed with Errors',
+            'failed': 'Failed'
+        };
+        return statusTexts[status] || status;
+    }
+
+    function getProgressHTML(job) {
+        if (job.total_chunks === 0) return '';
+        
+        const percentage = Math.round((job.completed_chunks / job.total_chunks) * 100);
+        const progressClass = job.status === 'completed_with_errors' ? 'progress-warning' : 'progress-normal';
+        
+        return `
+            <div class="progress-container">
+                <div class="progress-bar ${progressClass}">
+                    <div class="progress-fill" style="width: ${percentage}%"></div>
+                </div>
+                <span class="progress-text">${job.completed_chunks}/${job.total_chunks} (${percentage}%)</span>
+            </div>
+        `;
+    }
+
+    function formatDate(dateString) {
+        try {
+            return new Date(dateString).toLocaleString();
+        } catch (error) {
+            return dateString;
+        }
+    }
+
+    // Global functions available to onclick handlers
 }); 

@@ -4,6 +4,7 @@ OpenAI translation functionality.
 This module provides functions for translating text using the OpenAI API.
 """
 
+import asyncio
 import logging
 import os
 from typing import Optional
@@ -48,15 +49,21 @@ async def translate_text(
         prompt = f"Translate the following text to {target_language}. Preserve formatting and maintain the original meaning as accurately as possible:\n\n{text}"
         
         logger.info(f"Attempting to translate text to {target_language} using model {model}. Text length: {len(text)}")
-        # Call OpenAI API - OpenAI client is synchronous, so no await needed
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a professional translator."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,  # Lower temperature for more consistent translations
-        )
+        
+        # CRITICAL FIX: Run the synchronous OpenAI call in a thread pool to prevent blocking the event loop
+        def _sync_call():
+            return client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a professional translator."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,  # Lower temperature for more consistent translations
+            )
+        
+        # Run in thread pool to avoid blocking the async event loop
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, _sync_call)
         
         translation = response.choices[0].message.content.strip()
         logger.info(f"Successfully received translation from OpenAI. Translated text length: {len(translation)}")
@@ -87,15 +94,21 @@ async def translate_text_with_prompt(
         client = get_client()
         
         logger.info(f"Attempting translation with custom prompt using model {model}. Prompt length: {len(prompt)}")
-        # Call OpenAI API - OpenAI client is synchronous, so no await needed
-        response = client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "You are a professional translator. Follow the user's instructions carefully."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.3,  # Lower temperature for more consistent translations
-        )
+        
+        # CRITICAL FIX: Run the synchronous OpenAI call in a thread pool to prevent blocking the event loop
+        def _sync_call():
+            return client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": "You are a professional translator. Follow the user's instructions carefully."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,  # Lower temperature for more consistent translations
+            )
+        
+        # Run in thread pool to avoid blocking the async event loop
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(None, _sync_call)
         
         translation = response.choices[0].message.content.strip()
         logger.info(f"Successfully received translation from OpenAI. Translated text length: {len(translation)}")

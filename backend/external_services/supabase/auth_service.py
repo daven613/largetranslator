@@ -7,11 +7,16 @@ import base64
 import json
 import time
 import os
+import asyncio
 from typing import Dict, Any, Optional
 from supabase import Client
 from .client import get_supabase_client
 
 logger = logging.getLogger(__name__)
+
+# Simple in-memory cache for token validation
+_token_cache: Dict[str, Dict[str, Any]] = {}
+_cache_ttl = 300  # 5 minutes
 
 class SupabaseAuthService:
     @staticmethod
@@ -23,14 +28,14 @@ class SupabaseAuthService:
 
         if not supabase_url or not supabase_service_key:
             logger.error("Supabase URL or SUPABASE_SERVICE_ROLE_KEY not found for auth service")
-            raise Exception("SupABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing for auth operations.")
+            raise Exception("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing for auth operations.")
         
         # Need to import create_client here if it's not already available globally in this file
         from supabase import create_client
         return create_client(supabase_url, supabase_service_key)
 
     @staticmethod
-    def sign_up(email: str, password: str) -> Dict[str, Any]:
+    async def sign_up(email: str, password: str) -> Dict[str, Any]:
         """
         Register a new user with Supabase.
         
@@ -45,28 +50,40 @@ class SupabaseAuthService:
             Exception: If signup fails
         """
         try:
-            client = SupabaseAuthService._get_auth_client()
-            response = client.auth.sign_up({
-                "email": email,
-                "password": password
-            })
-            
-            if response.user:
-                logger.info(f"User created successfully: {email}")
-                return {
-                    "user": response.user,
-                    "session": response.session
-                }
-            else:
-                logger.error(f"Failed to create user: {email}")
-                raise Exception("User creation failed")
-                
+            # Run synchronous Supabase call in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, 
+                SupabaseAuthService._sync_sign_up, 
+                email, 
+                password
+            )
+            return result
         except Exception as e:
             logger.error(f"Error during signup: {str(e)}")
             raise
     
     @staticmethod
-    def sign_in(email: str, password: str) -> Dict[str, Any]:
+    def _sync_sign_up(email: str, password: str) -> Dict[str, Any]:
+        """Synchronous signup helper."""
+        client = SupabaseAuthService._get_auth_client()
+        response = client.auth.sign_up({
+            "email": email,
+            "password": password
+        })
+        
+        if response.user:
+            logger.info(f"User created successfully: {email}")
+            return {
+                "user": response.user,
+                "session": response.session
+            }
+        else:
+            logger.error(f"Failed to create user: {email}")
+            raise Exception("User creation failed")
+    
+    @staticmethod
+    async def sign_in(email: str, password: str) -> Dict[str, Any]:
         """
         Authenticate a user with Supabase.
         
@@ -81,30 +98,42 @@ class SupabaseAuthService:
             Exception: If login fails
         """
         try:
-            client = SupabaseAuthService._get_auth_client()
-            response = client.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-            
-            if response.user and response.session:
-                logger.info(f"User authenticated successfully: {email}")
-                
-                # Debug: Log token details
-                token = response.session.access_token
-                SupabaseAuthService._log_token_details(token)
-                
-                return {
-                    "user": response.user,
-                    "session": response.session
-                }
-            else:
-                logger.error(f"Authentication failed for user: {email}")
-                raise Exception("Authentication failed")
-                
+            # Run synchronous Supabase call in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, 
+                SupabaseAuthService._sync_sign_in, 
+                email, 
+                password
+            )
+            return result
         except Exception as e:
             logger.error(f"Error during authentication: {str(e)}")
             raise
+    
+    @staticmethod
+    def _sync_sign_in(email: str, password: str) -> Dict[str, Any]:
+        """Synchronous sign in helper."""
+        client = SupabaseAuthService._get_auth_client()
+        response = client.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
+        
+        if response.user and response.session:
+            logger.info(f"User authenticated successfully: {email}")
+            
+            # Debug: Log token details
+            token = response.session.access_token
+            SupabaseAuthService._log_token_details(token)
+            
+            return {
+                "user": response.user,
+                "session": response.session
+            }
+        else:
+            logger.error(f"Authentication failed for user: {email}")
+            raise Exception("Authentication failed")
     
     @staticmethod
     def _log_token_details(token: str) -> None:
@@ -149,20 +178,82 @@ class SupabaseAuthService:
             logger.error(f"Error decoding token for debug: {str(e)}")
     
     @staticmethod
-    def get_user(token: str) -> Optional[Dict[str, Any]]:
+    async def get_user(token: str) -> Optional[Dict[str, Any]]:
         """
-        Get user information from JWT token.
-        This method primarily decodes the token and checks its validity (like expiration).
-        It does not strictly need a Supabase client if we are just decoding.
-        However, if Supabase client's `auth.get_user(token)` is preferred, 
-        it should use a client initialized with the ANON key for consistency, 
-        as `get_user` is often about validating a user-provided token.
-
-        For this implementation, we continue with direct decoding as it was.
-        If a client-based approach is needed, it should use the anon key.
+        Get user information from JWT token with caching.
+        
+        Args:
+            token: JWT token
+            
+        Returns:
+            User data dict or None if invalid
         """
         try:
-            # Simplified approach: Decode and validate the JWT directly
+            # Check cache first
+            current_time = int(time.time())
+            if token in _token_cache:
+                cached_data = _token_cache[token]
+                if cached_data['cached_at'] + _cache_ttl > current_time:
+                    logger.debug("Token validation cache hit")
+                    return cached_data['user_data']
+                else:
+                    # Remove expired cache entry
+                    del _token_cache[token]
+            
+            # Validate token
+            user_data = await SupabaseAuthService._validate_token(token)
+            
+            # Cache the result if valid
+            if user_data:
+                _token_cache[token] = {
+                    'user_data': user_data,
+                    'cached_at': current_time
+                }
+                logger.debug("Token validation result cached")
+            
+            return user_data
+            
+        except Exception as e:
+            logger.error(f"Error validating token: {str(e)}")
+            return None
+    
+    @staticmethod
+    async def _validate_token(token: str) -> Optional[Dict[str, Any]]:
+        """
+        Validate JWT token asynchronously.
+        
+        Args:
+            token: JWT token
+            
+        Returns:
+            User data dict or None if invalid
+        """
+        try:
+            # Run token validation in thread pool to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None, 
+                SupabaseAuthService._sync_validate_token, 
+                token
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Error in async token validation: {str(e)}")
+            return None
+    
+    @staticmethod
+    def _sync_validate_token(token: str) -> Optional[Dict[str, Any]]:
+        """
+        Synchronous token validation helper.
+        
+        Args:
+            token: JWT token
+            
+        Returns:
+            User data dict or None if invalid
+        """
+        try:
+            # Decode the JWT payload (second part)
             parts = token.split('.')
             if len(parts) != 3:
                 logger.error("Invalid JWT token format")
@@ -181,7 +272,6 @@ class SupabaseAuthService:
                 email = payload.get('email')
                 
                 # Verify token expiration
-                import time
                 current_time = int(time.time())
                 expiration_time = payload.get('exp', 0)
                 
@@ -197,4 +287,11 @@ class SupabaseAuthService:
                 
         except Exception as e:
             logger.error(f"Error validating token: {str(e)}")
-            return None 
+            return None
+    
+    @staticmethod
+    def clear_token_cache():
+        """Clear the token validation cache."""
+        global _token_cache
+        _token_cache.clear()
+        logger.info("Token validation cache cleared") 

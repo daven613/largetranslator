@@ -28,7 +28,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     Raises:
         HTTPException: If authentication fails
     """
-    user = SupabaseAuthService.get_user(token)
+    user = await SupabaseAuthService.get_user(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -53,7 +53,7 @@ async def get_current_user_with_token(token: str = Depends(oauth2_scheme)) -> Tu
     Raises:
         HTTPException: If authentication fails
     """
-    user = SupabaseAuthService.get_user(token)
+    user = await SupabaseAuthService.get_user(token)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

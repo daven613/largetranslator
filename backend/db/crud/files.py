@@ -8,85 +8,80 @@ from datetime import datetime, timezone
 
 from pydantic import UUID4
 
-from ...external_services.supabase.client import get_supabase_client, get_user_supabase_client
 from ...helpers.json_utils import convert_uuids_to_str
 from .. import models
+from ..async_client import get_db_client
 
 logger = logging.getLogger(__name__)
 
 
-async def create_document(document: models.DocumentCreate, user_token: Optional[str] = None) -> models.Document:
+async def create_document(user_id: UUID, document_data: models.DocumentCreate) -> models.Document:
     """
     Create a new document in the database.
     
     Args:
-        document: Document data
-        user_token: Optional JWT token for RLS context
+        user_id: User ID
+        document_data: Document data
         
     Returns:
         Created document
     """
     try:
-        client_type = "" # For logging
-        if user_token:
-            client = get_user_supabase_client(user_token)
-            client_type = "user-specific (RLS)"
-            logger.info(f"create_document: Using {client_type} client.")
+        db = await get_db_client()
+        
+        # Prepare document data for insertion
+        document_dict = {
+            "user_id": str(user_id),
+            "filename": document_data.filename,
+            "file_size": document_data.file_size,
+            "content_type": document_data.content_type,
+            "file_path": document_data.file_path,
+            "status": "uploaded",
+            "created_at": datetime.utcnow().isoformat(),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        # Insert document
+        result = await db.insert_returning("documents", document_dict)
+        
+        if result:
+            return models.Document(**result)
         else:
-            # This case might be problematic if a user context is strictly required.
-            client = get_supabase_client()
-            client_type = "global admin (bypasses RLS)"
-            logger.warning(f"create_document: Using {client_type} client. This might bypass RLS if user_id is present in document data.")
-        
-        doc_dict = convert_uuids_to_str(document.model_dump())
-        
-        # Log the user_id being inserted
-        inserted_user_id = doc_dict.get('user_id')
-        logger.info(f"create_document: Attempting to insert document with user_id: {inserted_user_id} using {client_type} client.")
-
-        now_utc_iso = datetime.now(timezone.utc).isoformat()
-        doc_dict["created_at"] = now_utc_iso
-        doc_dict["updated_at"] = now_utc_iso
-        
-        # Set default metadata if not provided
-        if "metadata" not in doc_dict or doc_dict["metadata"] is None:
-            doc_dict["metadata"] = {}
-        
-        # Insert document into database
-        result = client.table("documents").insert(doc_dict).execute()
-        
-        if not result.data:
-            raise ValueError("Failed to create document")
-        
-        # Convert result to Document model
-        return models.Document(**result.data[0])
+            raise Exception("Failed to create document")
+            
     except Exception as e:
-        logger.error(f"Failed to create document: {str(e)}")
+        logger.error(f"Error creating document: {str(e)}")
         raise
 
 
-async def get_document_by_id(document_id: UUID4) -> Optional[models.Document]:
+async def get_document_by_id(document_id: UUID4, user_id: Optional[UUID] = None) -> Optional[models.Document]:
     """
-    Get a document by ID.
+    Get a document by ID, optionally filtering by user.
     
     Args:
         document_id: Document ID
+        user_id: Optional user ID for filtering
         
     Returns:
         Document or None if not found
     """
     try:
-        client = get_supabase_client()
+        db = await get_db_client()
         
-        # Get document
-        result = client.table('documents').select('*').eq('id', str(document_id)).execute()
+        # Build filters
+        filters = {"id": str(document_id)}
+        if user_id:
+            filters["user_id"] = str(user_id)
         
-        if not result.data:
-            return None
-            
-        return models.Document(**result.data[0])
+        # Fetch document
+        result = await db.fetch_one("documents", filters=filters)
+        
+        if result:
+            return models.Document(**result)
+        return None
+        
     except Exception as e:
-        logger.error(f"Failed to get document: {str(e)}")
+        logger.error(f"Error fetching document {document_id}: {str(e)}")
         raise
 
 
@@ -97,28 +92,24 @@ async def get_document_by_user_and_name(user_id: UUID4, document_name: str, user
     Args:
         user_id: User ID
         document_name: Name of the document
-        user_token: Optional JWT token for RLS context
+        user_token: Optional JWT token for RLS context (not used with direct DB access)
         
     Returns:
         Document or None if not found
     """
     try:
-        # Use user-specific client if token provided, otherwise use global client
-        if user_token:
-            client = get_user_supabase_client(user_token)
-        else:
-            client = get_supabase_client()
-        result = client.table('documents') \
-            .select('*') \
-            .eq('user_id', str(user_id)) \
-            .eq('name', document_name) \
-            .limit(1) \
-            .execute()
+        db = await get_db_client()
         
-        if not result.data or len(result.data) == 0 or not result.data[0]:
+        result = await db.fetch_one(
+            "SELECT * FROM documents WHERE user_id = $1 AND name = $2 LIMIT 1",
+            str(user_id),
+            document_name
+        )
+        
+        if not result:
             return None
             
-        return models.Document(**result.data[0])
+        return models.Document(**result)
     except Exception as e:
         logger.error(f"Failed to get document by user and name: {str(e)}")
         raise
@@ -135,14 +126,19 @@ async def get_documents_by_user(user_id: UUID4) -> List[models.Document]:
         List of documents
     """
     try:
-        client = get_supabase_client()
+        db = await get_db_client()
         
-        # Get documents
-        result = client.table('documents').select('*').eq('user_id', str(user_id)).execute()
+        # Fetch documents for user
+        results = await db.fetch_all(
+            "documents", 
+            filters={"user_id": str(user_id)},
+            select="*"
+        )
         
-        return [models.Document(**doc) for doc in result.data]
+        return [models.Document(**doc) for doc in results]
+        
     except Exception as e:
-        logger.error(f"Failed to get documents for user: {str(e)}")
+        logger.error(f"Error fetching documents for user {user_id}: {str(e)}")
         raise
 
 
@@ -158,111 +154,131 @@ async def get_documents_by_metadata(user_id: UUID4, metadata_query: Dict[str, An
         List of documents matching the metadata query
     """
     try:
-        client = get_supabase_client()
+        db = await get_db_client()
         
-        # Start with user filter
-        query = client.table('documents').select('*').eq('user_id', str(user_id))
+        # Build query with metadata filters
+        where_clauses = ["user_id = $1"]
+        params = [str(user_id)]
         
-        # Add metadata filters
-        # This is a simplified implementation - for more complex queries,
-        # consider using Postgres JSON operators more extensively
-        for key, value in metadata_query.items():
-            query = query.filter(f"metadata->>'{key}'", 'eq', value)
+        for i, (key, value) in enumerate(metadata_query.items(), start=2):
+            where_clauses.append(f"metadata->>'${i-1}' = ${i}")
+            params.append(key)
+            params.append(str(value))
         
-        result = query.execute()
+        query = f"SELECT * FROM documents WHERE {' AND '.join(where_clauses)}"
+        results = await db.fetch_all(query, *params)
         
-        return [models.Document(**doc) for doc in result.data]
+        return [models.Document(**doc) for doc in results]
     except Exception as e:
         logger.error(f"Failed to get documents by metadata: {str(e)}")
         raise
 
 
-async def update_document(document_id: UUID4, update_data: models.DocumentUpdate, user_token: Optional[str] = None) -> models.Document:
+async def update_document(document_id: UUID4, update_data: models.DocumentUpdate, user_id: Optional[UUID] = None) -> Optional[models.Document]:
     """
     Update a document in the database.
     
     Args:
         document_id: ID of the document to update
         update_data: Document data to update
-        user_token: Optional JWT token for RLS context
+        user_id: Optional user ID for filtering
         
     Returns:
-        Updated document
+        Updated document or None if no fields to update
     """
     try:
-        # Use user-specific client if token provided, otherwise use global client
-        if user_token:
-            client = get_user_supabase_client(user_token)
-        else:
-            client = get_supabase_client()
+        db = await get_db_client()
         
-        # Convert UUIDs to strings for Supabase
-        # Filter out None values to only update provided fields
-        update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+        # Prepare update data (exclude None values)
+        update_dict = {}
+        if update_data.filename is not None:
+            update_dict["filename"] = update_data.filename
+        if update_data.status is not None:
+            update_dict["status"] = update_data.status
+        if update_data.file_path is not None:
+            update_dict["file_path"] = update_data.file_path
+        if update_data.content_type is not None:
+            update_dict["content_type"] = update_data.content_type
+        if update_data.file_size is not None:
+            update_dict["file_size"] = update_data.file_size
         
-        # Always update updated_at field to UTC
-        update_dict["updated_at"] = datetime.now(timezone.utc).isoformat()
+        # Always update the updated_at timestamp
+        update_dict["updated_at"] = datetime.utcnow().isoformat()
         
-        # Update document in database
-        result = client.table("documents").update(update_dict).eq("id", str(document_id)).execute()
+        if not update_dict:
+            # No fields to update
+            return await get_document_by_id(document_id, user_id)
         
-        if not result.data:
-            raise ValueError(f"Document with ID {document_id} not found")
+        # Build filters
+        filters = {"id": str(document_id)}
+        if user_id:
+            filters["user_id"] = str(user_id)
         
-        # Convert result to Document model
-        return models.Document(**result.data[0])
+        # Update document
+        result = await db.update_returning("documents", update_dict, filters)
+        
+        if result:
+            return models.Document(**result)
+        return None
+        
     except Exception as e:
-        logger.error(f"Failed to update document: {str(e)}")
+        logger.error(f"Error updating document {document_id}: {str(e)}")
         raise
 
 
-async def delete_document(document_id: UUID4) -> bool:
+async def delete_document(document_id: UUID4, user_id: Optional[UUID] = None) -> bool:
     """
     Delete a document.
     
     Args:
         document_id: Document ID
+        user_id: Optional user ID for filtering
         
     Returns:
         True if deleted, False if not found
     """
     try:
-        client = get_supabase_client()
+        db = await get_db_client()
+        
+        # Build filters
+        filters = {"id": str(document_id)}
+        if user_id:
+            filters["user_id"] = str(user_id)
         
         # Delete document
-        result = client.table('documents').delete().eq('id', str(document_id)).execute()
+        result = await db.delete_returning("documents", filters)
         
-        return len(result.data) > 0
+        return result is not None
+        
     except Exception as e:
-        logger.error(f"Failed to delete document: {str(e)}")
+        logger.error(f"Error deleting document {document_id}: {str(e)}")
         raise
 
 
 async def update_document_metadata(document_id: UUID4, metadata_updates: Dict[str, Any]) -> models.Document:
     """
-    Update document metadata without replacing the entire metadata object.
+    Update metadata fields for a document.
     
     Args:
         document_id: Document ID
-        metadata_updates: Metadata fields to update/add
+        metadata_updates: Dictionary of metadata updates
         
     Returns:
         Updated document
     """
     try:
-        # First get the current document to access its metadata
-        doc = await get_document_by_id(document_id)
-        if not doc:
+        # Get current document to merge metadata
+        current_doc = await get_document_by_id(document_id)
+        if not current_doc:
             raise ValueError(f"Document with ID {document_id} not found")
         
-        # Update metadata with new fields
-        metadata = doc.metadata.copy()
-        metadata.update(metadata_updates)
+        # Merge metadata
+        current_metadata = current_doc.metadata or {}
+        updated_metadata = {**current_metadata, **metadata_updates}
         
         # Update document with new metadata
-        update_data = models.DocumentUpdate(metadata=metadata)
+        update_data = models.DocumentUpdate(metadata=updated_metadata)
         return await update_document(document_id, update_data)
-        
     except Exception as e:
-        logger.error(f"Failed to update metadata: {str(e)}")
+        logger.error(f"Failed to update document metadata: {str(e)}")
         raise 

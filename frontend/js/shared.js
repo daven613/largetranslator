@@ -151,6 +151,22 @@ const API = {
     return this.request(`/translations/${translationId}`, {
       method: 'DELETE'
     });
+  },
+
+  async getTranslatedChunks(translationId) {
+    return this.request(`/translations/${translationId}/chunks`);
+  },
+
+  async getTranslationDetails(translationId) {
+    return this.request(`/translations/${translationId}/details`);
+  },
+
+  async getOriginalChunks(chunkSetId) {
+    return this.request(`/chunking/chunks/by-chunk-set/${chunkSetId}`);
+  },
+
+  async getChunkSet(chunkSetId) {
+    return this.request(`/chunking/chunk-sets/${chunkSetId}`);
   }
 };
 
@@ -294,7 +310,8 @@ const TranslationStatus = {
     const statusMap = {
       'pending': { class: 'status-pending', text: '⏳ Pending', description: 'Translation queued' },
       'in_progress': { class: 'status-processing', text: '⚙️ Processing', description: 'Translation in progress' },
-      'completed': { class: 'status-completed', text: '✅ Completed', description: 'Translation finished' },
+      'completed': { class: 'status-completed', text: '✅ Completed', description: 'Translation finished successfully' },
+      'completed_with_errors': { class: 'status-completed-errors', text: '⚠️ Completed with Errors', description: 'Translation finished but some chunks failed' },
       'failed': { class: 'status-failed', text: '❌ Failed', description: 'Translation failed' }
     };
 
