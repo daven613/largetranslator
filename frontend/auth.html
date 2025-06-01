@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Large Translator - Login</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔤 Large Translator</h1>
+            <p>Translate large documents with AI</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-control" required>
+            </div>
+            
+            <button type="submit" class="btn" id="loginBtn" data-original-text="Sign In">
+                Sign In
+            </button>
+        </form>
+
+        <!-- Toggle to Signup -->
+        <div style="text-align: center; margin-top: 20px;">
+            <p>Don't have an account? 
+                <a href="#" id="toggleSignup" style="color: #667eea; text-decoration: none; font-weight: 500;">
+                    Create one here
+                </a>
+            </p>
+        </div>
+
+        <!-- Signup Form (Hidden by default) -->
+        <form id="signupForm" style="display: none;">
+            <div class="form-group">
+                <label for="signupEmail">Email</label>
+                <input type="email" id="signupEmail" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="signupPassword">Password</label>
+                <input type="password" id="signupPassword" class="form-control" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" class="form-control" required minlength="6">
+            </div>
+            
+            <button type="submit" class="btn" id="signupBtn" data-original-text="Create Account">
+                Create Account
+            </button>
+        </form>
+
+        <!-- Toggle back to Login -->
+        <div id="backToLogin" style="text-align: center; margin-top: 20px; display: none;">
+            <p>Already have an account? 
+                <a href="#" id="toggleLogin" style="color: #667eea; text-decoration: none; font-weight: 500;">
+                    Sign in here
+                </a>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/auth.js"></script>
+</body>
+</html> 

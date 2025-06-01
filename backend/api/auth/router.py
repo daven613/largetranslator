@@ -5,7 +5,7 @@ Defines endpoints for user signup and login.
 import logging
 from fastapi import APIRouter, HTTPException, status
 from . import schemas
-from ...external_services.supabase.auth_service import SupabaseAuthService
+from backend.external_services.supabase.auth_service import SupabaseAuthService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["authentication"])

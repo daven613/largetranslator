@@ -1,0 +1,6 @@
+Translation:
+
+Este es un documento de prueba para traducción.
+Contiene varias frases que serán divididas en fragmentos.
+Cada fragmento se traducirá individualmente.
+You haven't specified the language you want the text to be translated into. Could you please provide the target language?

@@ -4,10 +4,10 @@ Supabase Storage service for file operations.
 import io
 import logging
 import os
-from typing import Dict, List, Any, BinaryIO
+from typing import Dict, List, Any, BinaryIO, Optional
 from datetime import datetime
 import mimetypes
-from .client import get_supabase_client
+from .client import get_supabase_client, get_user_supabase_client
 
 logger = logging.getLogger(__name__)
 
@@ -18,32 +18,35 @@ class SupabaseStorageService:
     """Service for interacting with Supabase Storage"""
     
     @classmethod
-    def initialize_storage(cls) -> None:
+    def initialize_storage(cls, user_token: Optional[str] = None) -> None:
         """
-        Initialize storage by creating necessary buckets if they don't exist.
-        Note: For first-time setup, you need to run the admin script:
-        python -m backend.api.admin --create-bucket
+        Initialize storage by checking that the bucket exists.
+        
+        Args:
+            user_token: Optional JWT token for user-specific context
         """
         try:
-            client = get_supabase_client()
+            # Use user-specific client if token provided, otherwise use global client
+            if user_token:
+                client = get_user_supabase_client(user_token)
+            else:
+                client = get_supabase_client()
             
             # Check if we can access the bucket directly
-            # (we don't try to create it here as that might require elevated permissions)
             try:
                 client.storage.from_(TEXT_FILES_BUCKET).list()
                 logger.info(f"Successfully accessed bucket '{TEXT_FILES_BUCKET}'")
             except Exception as e:
                 logger.error(f"Error accessing bucket: {str(e)}")
                 logger.error(f"The bucket '{TEXT_FILES_BUCKET}' might not exist yet.")
-                logger.error(f"Run 'python -m backend.api.admin --create-bucket' to create it.")
-                raise Exception(f"Bucket '{TEXT_FILES_BUCKET}' is not accessible. Run the admin script to create it.")
+                raise Exception(f"Bucket '{TEXT_FILES_BUCKET}' is not accessible. Please check your Supabase storage.")
                 
         except Exception as e:
             logger.error(f"Failed to initialize storage: {str(e)}")
             raise
     
     @classmethod
-    def upload_file(cls, user_id: str, file_name: str, file_content: bytes, content_type: str = None) -> Dict[str, Any]:
+    def upload_file(cls, user_id: str, file_name: str, file_content: bytes, content_type: str = None, user_token: Optional[str] = None) -> Dict[str, Any]:
         """
         Upload a file to Supabase storage.
         
@@ -52,16 +55,38 @@ class SupabaseStorageService:
             file_name: Name of the file
             file_content: Binary content of the file
             content_type: MIME type of the file
+            user_token: Optional JWT token for user-specific context
             
         Returns:
             Dictionary with metadata of the uploaded file
         """
         try:
-            # Ensure the bucket exists
-            cls.initialize_storage()
+            # Log the inputs for debugging
+            logger.info(f"storage_service.upload_file called with:")
+            logger.info(f"  user_id: {user_id}")
+            logger.info(f"  file_name: {file_name}")
+            logger.info(f"  content_type: {content_type}")
+            logger.info(f"  user_token provided: {'Yes' if user_token else 'No'}")
+            if user_token:
+                logger.info(f"  user_token length: {len(user_token)}")
+            
+            # Create the client once and reuse it for both operations
+            if user_token:
+                client = get_user_supabase_client(user_token)
+            else:
+                client = get_supabase_client()
+            
+            # Check bucket access with the same client we'll use for upload
+            try:
+                client.storage.from_(TEXT_FILES_BUCKET).list()
+                logger.info(f"Successfully accessed bucket '{TEXT_FILES_BUCKET}' with upload client")
+            except Exception as e:
+                logger.error(f"Error accessing bucket with upload client: {str(e)}")
+                raise Exception(f"Bucket '{TEXT_FILES_BUCKET}' is not accessible. Please check your Supabase storage.")
             
             # Generate a path that includes the user ID to separate files by user
             file_path = f"{user_id}/{file_name}"
+            logger.info(f"  Generated file_path: {file_path}")
             
             # If content type is not provided, try to guess it
             if not content_type:
@@ -69,12 +94,12 @@ class SupabaseStorageService:
                 if not content_type:
                     content_type = "text/plain"  # Default to text/plain
             
-            # Upload the file
-            client = get_supabase_client()
+            # Upload the file using the same client we used for bucket access
+            logger.info(f"Attempting upload with same client instance...")
             result = client.storage.from_(TEXT_FILES_BUCKET).upload(
-                file_path,
-                file_content,
-                {"content-type": content_type}
+                path=file_path,
+                file=file_content, 
+                file_options={"content-type": content_type, "x-upsert": "true"}
             )
             
             # Get file metadata
@@ -137,6 +162,53 @@ class SupabaseStorageService:
             raise
     
     @classmethod
+    def get_file_metadata(cls, user_id: str, file_name: str) -> Dict[str, Any]:
+        """
+        Get a file's metadata without downloading its content.
+        
+        Args:
+            user_id: ID of the user
+            file_name: Name of the file
+            
+        Returns:
+            Dictionary with file metadata
+        """
+        try:
+            # Ensure the bucket exists
+            cls.initialize_storage()
+            
+            client = get_supabase_client()
+            file_path = f"{user_id}/{file_name}"
+            
+            # List files in the user's directory to find this specific file
+            files = client.storage.from_(TEXT_FILES_BUCKET).list(user_id)
+            
+            # Find the specific file
+            file_info = None
+            for file in files:
+                if file['name'] == file_name:
+                    file_info = file
+                    break
+            
+            if not file_info:
+                raise ValueError(f"File {file_name} not found")
+            
+            # Get public URL
+            file_url = client.storage.from_(TEXT_FILES_BUCKET).get_public_url(file_path)
+            
+            return {
+                "file_id": file_path,
+                "file_name": file_name,
+                "file_size": file_info.get("metadata", {}).get("size", 0),
+                "content_type": file_info.get("metadata", {}).get("mimetype", "text/plain"),
+                "created_at": file_info.get("created_at", datetime.now().isoformat()),
+                "url": file_url
+            }
+        except Exception as e:
+            logger.error(f"Failed to get file metadata: {str(e)}")
+            raise
+    
+    @classmethod
     def get_file(cls, user_id: str, file_name: str) -> Dict[str, Any]:
         """
         Get a file's content and metadata.
@@ -178,6 +250,33 @@ class SupabaseStorageService:
             logger.error(f"Failed to get file: {str(e)}")
             raise
     
+    @classmethod
+    def download_file(cls, storage_path: str, local_path: str, user_id: str) -> None:
+        """
+        Download a file from storage to a local path.
+        
+        Args:
+            storage_path: Path in storage (e.g., "translations/123/file.txt")
+            local_path: Local file path to save to
+            user_id: User ID for access control
+        """
+        try:
+            # Ensure the bucket exists
+            cls.initialize_storage()
+            
+            client = get_supabase_client()
+            
+            # Download file content
+            response = client.storage.from_(TEXT_FILES_BUCKET).download(storage_path)
+            
+            # Write to local file
+            with open(local_path, 'wb') as f:
+                f.write(response)
+                
+        except Exception as e:
+            logger.error(f"Failed to download file: {str(e)}")
+            raise
+
     @classmethod
     def delete_file(cls, user_id: str, file_name: str) -> Dict[str, Any]:
         """

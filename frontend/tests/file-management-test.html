@@ -224,13 +224,31 @@
     uploadBtn.addEventListener('click', handleFileUpload);
     refreshBtn.addEventListener('click', loadFileList);
 
+    // Check if token is expired by decoding it
+    function isTokenExpired(token) {
+      if (!token) return true;
+      
+      try {
+        // Get the payload part of the JWT (second part)
+        const payload = token.split('.')[1];
+        // Base64 decode and parse JSON
+        const decoded = JSON.parse(atob(payload));
+        // Check if token has expired
+        const currentTime = Math.floor(Date.now() / 1000);
+        return decoded.exp < currentTime;
+      } catch (e) {
+        console.error('Error decoding token:', e);
+        return true;
+      }
+    }
+
     // Check login status and update UI accordingly
     function checkLoginStatus() {
       const token = sessionStorage.getItem('auth_token');
       const userEmail = sessionStorage.getItem('user_email');
       
-      if (token && userEmail) {
-        // User is logged in
+      if (token && userEmail && !isTokenExpired(token)) {
+        // User is logged in with valid token
         authStatus.textContent = `Logged in as: ${userEmail}`;
         authStatus.className = 'auth-status logged-in';
         loginBtn.style.display = 'none';
@@ -247,9 +265,15 @@
         // Load file list when user is logged in
         loadFileList();
       } else {
-        // User is not logged in
-        authStatus.textContent = 'Not logged in';
-        authStatus.className = 'auth-status logged-out';
+        // User is not logged in or token expired
+        if (token && isTokenExpired(token)) {
+          showStatus(listStatus, 'Your session has expired. Please log in again.', 'error');
+          handleLogout(); // Clear the expired token
+        } else {
+          authStatus.textContent = 'Not logged in';
+          authStatus.className = 'auth-status logged-out';
+        }
+        
         loginBtn.style.display = 'inline-block';
         logoutBtn.style.display = 'none';
         
@@ -319,7 +343,30 @@
 
     // Get auth token for API requests
     function getAuthToken() {
-      return sessionStorage.getItem('auth_token');
+      const token = sessionStorage.getItem('auth_token');
+      if (token && isTokenExpired(token)) {
+        // Token is expired, clear it and redirect to login
+        handleLogout();
+        showStatus(uploadStatus, 'Your session has expired. Please log in again.', 'error');
+        return null;
+      }
+      return token;
+    }
+
+    // Handle API responses for auth issues
+    async function handleApiResponse(response, errorElement, successCallback) {
+      if (response.status === 401) {
+        // Unauthorized - token is invalid or expired
+        showStatus(errorElement, 'Invalid authentication credentials', 'error');
+        handleLogout(); // Force logout
+        return null;
+      } else if (response.ok) {
+        return await successCallback(response);
+      } else {
+        const errorData = await response.json();
+        showStatus(errorElement, `Error: ${errorData.detail || 'Unknown error'}`, 'error');
+        return null;
+      }
     }
 
     // Handle file upload
@@ -329,6 +376,9 @@
         return;
       }
       
+      const token = getAuthToken();
+      if (!token) return; // No valid token
+      
       const file = fileUpload.files[0];
       const formData = new FormData();
       formData.append('file', file);
@@ -337,20 +387,18 @@
         const response = await fetch(`${API_BASE_URL}/files/upload`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${token}`
           },
           body: formData
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        await handleApiResponse(response, uploadStatus, async (resp) => {
+          const data = await resp.json();
           showStatus(uploadStatus, `File "${data.file_name}" uploaded successfully!`, 'success');
           fileUpload.value = '';
           loadFileList();
-        } else {
-          const errorData = await response.json();
-          showStatus(uploadStatus, `Upload failed: ${errorData.detail || 'Unknown error'}`, 'error');
-        }
+          return data;
+        });
       } catch (error) {
         showStatus(uploadStatus, `Error: ${error.message}`, 'error');
       }
@@ -358,24 +406,25 @@
 
     // Load file list from API
     async function loadFileList() {
+      const token = getAuthToken();
+      if (!token) return; // No valid token
+      
       try {
         showStatus(listStatus, 'Loading files...', 'success');
         
         const response = await fetch(`${API_BASE_URL}/files`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        await handleApiResponse(response, listStatus, async (resp) => {
+          const data = await resp.json();
           renderFileList(data.files);
           showStatus(listStatus, '', 'hidden');
-        } else {
-          const errorData = await response.json();
-          showStatus(listStatus, `Failed to load files: ${errorData.detail || 'Unknown error'}`, 'error');
-        }
+          return data;
+        });
       } catch (error) {
         showStatus(listStatus, `Error: ${error.message}`, 'error');
       }
@@ -415,16 +464,19 @@
 
     // Download/view file
     async function downloadFile(fileName) {
+      const token = getAuthToken();
+      if (!token) return; // No valid token
+      
       try {
         const response = await fetch(`${API_BASE_URL}/files/${fileName}`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
-        if (response.ok) {
-          const data = await response.json();
+        await handleApiResponse(response, listStatus, async (resp) => {
+          const data = await resp.json();
           
           // Create a modal to display the file content
           const modal = document.createElement('div');
@@ -474,10 +526,9 @@
           modal.appendChild(modalContent);
           
           document.body.appendChild(modal);
-        } else {
-          const errorData = await response.json();
-          alert(`Failed to download file: ${errorData.detail || 'Unknown error'}`);
-        }
+          
+          return data;
+        });
       } catch (error) {
         alert(`Error: ${error.message}`);
       }
@@ -489,21 +540,22 @@
         return;
       }
       
+      const token = getAuthToken();
+      if (!token) return; // No valid token
+      
       try {
         const response = await fetch(`${API_BASE_URL}/files/${fileName}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${getAuthToken()}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
-        if (response.ok) {
+        await handleApiResponse(response, listStatus, async (resp) => {
           showStatus(listStatus, `File "${fileName}" deleted successfully!`, 'success');
           loadFileList();
-        } else {
-          const errorData = await response.json();
-          showStatus(listStatus, `Failed to delete file: ${errorData.detail || 'Unknown error'}`, 'error');
-        }
+          return await resp.json();
+        });
       } catch (error) {
         showStatus(listStatus, `Error: ${error.message}`, 'error');
       }

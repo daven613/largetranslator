@@ -30,7 +30,7 @@ from backend.api.main import app
 from backend.api.dependencies import get_current_user
 
 # Create a test user that will be used across all tests
-TEST_USER = {"id": "test-user-id", "email": "testuser@example.com"}
+TEST_USER = {"id": "550e8400-e29b-41d4-a716-446655440000", "email": "testuser@example.com"}
 
 # Override the dependency in tests
 app.dependency_overrides[get_current_user] = lambda: TEST_USER
@@ -58,8 +58,11 @@ class TestFileManagement(unittest.TestCase):
         self.test_user_id = TEST_USER["id"]
         self.test_email = TEST_USER["email"]
     
+    @patch('backend.external_services.supabase.client.get_supabase_client')
+    @patch('backend.db.crud.files.create_document')
+    @patch('backend.db.crud.files.get_document_by_user_and_name')
     @patch('backend.external_services.supabase.storage_service.SupabaseStorageService.upload_file')
-    def test_upload_file(self, mock_upload_file):
+    def test_upload_file(self, mock_upload_file, mock_get_document, mock_create_document, mock_supabase_client):
         """Test uploading a text file."""
         # Create test file data
         file_name = f"test-file-{generate_random_string()}.txt"
@@ -74,6 +77,26 @@ class TestFileManagement(unittest.TestCase):
             "created_at": datetime.now().isoformat()
         }
         mock_upload_file.return_value = mock_file_metadata
+        
+        # Mock Supabase client
+        mock_supabase_client.return_value = None
+        
+        # Mock database operations
+        mock_get_document.return_value = None  # No existing document
+        
+        # Mock document creation response
+        from backend.db import models
+        mock_document = models.Document(
+            id="550e8400-e29b-41d4-a716-446655440001",
+            user_id=self.test_user_id,
+            name=file_name,
+            file_path=f"{self.test_user_id}/{file_name}",
+            file_size=len(file_content),
+            metadata={"content_type": "text/plain"},
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        mock_create_document.return_value = mock_document
         
         # Create test file for upload
         test_file = io.BytesIO(file_content.encode('utf-8'))

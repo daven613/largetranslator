@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Translation Workflow Test</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .section {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 20px;
+    }
+    .auth-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .logged-in {
+      background-color: #e7f7e7;
+      color: #2e7d32;
+      border: 1px solid #c3e6c3;
+    }
+    .logged-out {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+    input, textarea {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    input[type="text"], input[type="email"], input[type="password"] {
+      width: 200px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      resize: vertical;
+    }
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      margin: 5px;
+    }
+    button:hover {
+      background-color: #357abd;
+    }
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .success-btn {
+      background-color: #4caf50;
+    }
+    .danger-btn {
+      background-color: #f44336;
+    }
+    .warning-btn {
+      background-color: #ff9800;
+    }
+    .status-message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #e8f5e9;
+      color: #388e3c;
+      border: 1px solid #c8e6c9;
+    }
+    .error {
+      background-color: #ffebee;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+    }
+    .info {
+      background-color: #e3f2fd;
+      color: #1976d2;
+      border: 1px solid #bbdefb;
+    }
+    .hidden {
+      display: none;
+    }
+    .workflow-step {
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+    }
+    .step-completed {
+      border-color: #4caf50;
+      background-color: #f1f8e9;
+    }
+    .step-active {
+      border-color: #2196f3;
+      background-color: #e3f2fd;
+    }
+    .step-error {
+      border-color: #f44336;
+      background-color: #ffebee;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background-color: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background-color: #4caf50;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔄 Complete Translation Workflow Test</h1>
+  <p>Test the entire translation pipeline: Upload → Chunk → Translate → Download</p>
+
+  <!-- Authentication Section -->
+  <section class="section">
+    <h2>🔐 Authentication</h2>
+    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <div>
+        <input type="email" id="auth-email" placeholder="Email" value="daven613us@gmail.com">
+        <input type="password" id="auth-password" placeholder="Password" value="12341234">
+        <button id="login-btn">Login</button>
+        <button id="logout-btn" class="danger-btn" style="display: none;">Logout</button>
+      </div>
+      <div id="auth-status" class="auth-status logged-out">Not logged in</div>
+    </div>
+  </section>
+
+  <!-- Workflow Progress Section -->
+  <section id="workflow-section" class="section" style="display: none;">
+    <h2>🚀 Translation Workflow Progress</h2>
+    <div class="progress-bar">
+      <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+    </div>
+    <div id="progress-text">Ready to start workflow</div>
+  </section>
+
+  <!-- Step 1: File Upload -->
+  <section id="upload-section" class="section workflow-step" style="display: none;">
+    <h3>📁 Step 1: Upload File</h3>
+    <div>
+      <input type="file" id="file-input" accept=".txt,.pdf,.docx,.md" style="margin-right: 10px;">
+      <button id="upload-file-btn">Upload Selected File</button>
+      <span id="upload-status"></span>
+    </div>
+    <div id="upload-result" class="status-message hidden"></div>
+  </section>
+
+  <!-- Step 2: File Chunking -->
+  <section id="chunking-section" class="section workflow-step" style="display: none;">
+    <h3>✂️ Step 2: Chunk Document</h3>
+    <div>
+      <label>Chunk Size: <input type="number" id="chunk-size" value="1000" min="100" max="5000"></label>
+      <label>Overlap: <input type="number" id="overlap" value="0" min="0" max="200"></label>
+      <button id="chunk-file-btn" disabled>Chunk File</button>
+      <span id="chunking-status"></span>
+    </div>
+    <div id="chunking-result" class="status-message hidden"></div>
+  </section>
+
+  <!-- Step 3: Translation -->
+  <section id="translation-section" class="section workflow-step" style="display: none;">
+    <h3>🌐 Step 3: Translate Document</h3>
+    <div>
+      <label>Translation Prompt: 
+        <textarea id="translation-prompt" placeholder="e.g., 'Translate this text to Spanish'" style="width: 400px; height: 60px;">Translate this text to Hebrew</textarea>
+      </label>
+      <button id="start-translation-btn" disabled>Start Translation</button>
+      <span id="translation-status"></span>
+    </div>
+    <div id="translation-result" class="status-message hidden"></div>
+    <div id="translation-progress" style="margin-top: 10px; display: none;">
+      <div>Progress: <span id="progress-chunks">0</span>/<span id="total-chunks">0</span> chunks</div>
+      <div class="progress-bar" style="height: 10px;">
+        <div id="translation-progress-fill" class="progress-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 4: Download -->
+  <section id="download-section" class="section workflow-step" style="display: none;">
+    <h3>📥 Step 4: Download Translated Document</h3>
+    <div>
+      <button id="download-btn" disabled>Download Translation</button>
+      <span id="download-status"></span>
+    </div>
+    <div id="download-result" class="status-message hidden"></div>
+  </section>
+
+  <!-- Results Summary -->
+  <section id="results-section" class="section" style="display: none;">
+    <h2>📊 Workflow Results</h2>
+    <div id="workflow-summary"></div>
+  </section>
+
+  <script>
+    // Global variables
+    const API_BASE_URL = 'http://localhost:8000/api';
+    let authToken = null;
+    let currentDocumentId = null;
+    let currentChunkSetId = null;
+    let currentTranslationId = null;
+    let workflowStep = 0;
+
+    // Authentication elements
+    const authStatus = document.getElementById('auth-status');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+
+    // Workflow elements
+    const workflowSection = document.getElementById('workflow-section');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+
+         // Step elements
+     const uploadSection = document.getElementById('upload-section');
+     const chunkingSection = document.getElementById('chunking-section');
+     const translationSection = document.getElementById('translation-section');
+     const downloadSection = document.getElementById('download-section');
+     const resultsSection = document.getElementById('results-section');
+
+     // Update progress
+     function updateProgress(step, total, message) {
+       const percentage = (step / total) * 100;
+       progressFill.style.width = `${percentage}%`;
+       progressText.textContent = message;
+       workflowStep = step;
+     }
+
+     // Update step status
+     function updateStepStatus(sectionElement, status) {
+       sectionElement.className = sectionElement.className.replace(/step-(completed|active|error)/g, '');
+       sectionElement.classList.add(`step-${status}`);
+     }
+
+     // Show status message
+     function showStatus(elementId, message, type = 'info') {
+       const element = document.getElementById(elementId);
+       element.className = `status-message ${type}`;
+       element.textContent = message;
+       element.classList.remove('hidden');
+     }
+
+     // API helper function
+     function getAuthHeaders() {
+       return {
+         'Authorization': `Bearer ${authToken}`,
+         'Content-Type': 'application/json'
+       };
+     }
+
+    // Authentication functions
+    async function login() {
+      const email = authEmail.value;
+      const password = authPassword.value;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          authToken = data.token.access_token;
+          
+          console.log('Login successful, token:', authToken ? 'received' : 'missing');
+          authStatus.textContent = `Logged in as ${email}`;
+          authStatus.className = 'auth-status logged-in';
+          
+          loginBtn.style.display = 'none';
+          logoutBtn.style.display = 'inline-block';
+          
+                     // Show workflow sections
+           workflowSection.style.display = 'block';
+           uploadSection.style.display = 'block';
+           chunkingSection.style.display = 'block';
+           translationSection.style.display = 'block';
+           downloadSection.style.display = 'block';
+           
+           updateProgress(0, 5, 'Ready to start workflow');
+          
+        } else {
+          const error = await response.json();
+          authStatus.textContent = `Login failed: ${error.detail}`;
+          authStatus.className = 'auth-status logged-out';
+        }
+      } catch (error) {
+        authStatus.textContent = `Login error: ${error.message}`;
+        authStatus.className = 'auth-status logged-out';
+      }
+    }
+
+    function logout() {
+      authToken = null;
+      authStatus.textContent = 'Not logged in';
+      authStatus.className = 'auth-status logged-out';
+      
+      loginBtn.style.display = 'inline-block';
+      logoutBtn.style.display = 'none';
+      
+             // Hide workflow sections
+       workflowSection.style.display = 'none';
+       uploadSection.style.display = 'none';
+       chunkingSection.style.display = 'none';
+       translationSection.style.display = 'none';
+       downloadSection.style.display = 'none';
+       resultsSection.style.display = 'none';
+      
+      // Reset workflow state
+      currentDocumentId = null;
+      currentChunkSetId = null;
+      currentTranslationId = null;
+      workflowStep = 0;
+    }
+
+         // Workflow functions
+     async function uploadFile() {
+       const fileInput = document.getElementById('file-input');
+       const file = fileInput.files[0];
+       
+       if (!file) {
+         showStatus('upload-result', '❌ Please select a file first', 'error');
+         return;
+       }
+       
+       updateStepStatus(uploadSection, 'active');
+       showStatus('upload-result', `Uploading ${file.name}...`, 'info');
+       
+       try {
+         console.log('Upload attempt - Token available:', authToken ? 'yes' : 'no');
+         console.log('Upload attempt - Token preview:', authToken ? authToken.substring(0, 20) + '...' : 'none');
+         
+         const formData = new FormData();
+         formData.append('file', file);
+         
+         const response = await fetch(`${API_BASE_URL}/files/upload`, {
+           method: 'POST',
+           headers: {
+             'Authorization': `Bearer ${authToken}`
+           },
+           body: formData
+         });
+         
+         console.log('Upload response status:', response.status);
+         
+         if (response.ok) {
+           const data = await response.json();
+           currentDocumentId = data.document_id;
+           
+           updateStepStatus(uploadSection, 'completed');
+           showStatus('upload-result', `✅ File "${file.name}" uploaded successfully! Document ID: ${currentDocumentId}`, 'success');
+           updateProgress(1, 5, 'File uploaded, ready to chunk');
+           
+           document.getElementById('chunk-file-btn').disabled = false;
+         } else {
+           const error = await response.json();
+           updateStepStatus(uploadSection, 'error');
+           showStatus('upload-result', `❌ Upload failed: ${error.detail}`, 'error');
+         }
+       } catch (error) {
+         updateStepStatus(uploadSection, 'error');
+         showStatus('upload-result', `❌ Upload error: ${error.message}`, 'error');
+       }
+     }
+     
+     async function chunkFile() {
+       updateStepStatus(chunkingSection, 'active');
+       showStatus('chunking-result', 'Chunking document...', 'info');
+       
+       try {
+         const chunkSize = document.getElementById('chunk-size').value;
+         const overlap = document.getElementById('overlap').value;
+         
+         const response = await fetch(`${API_BASE_URL}/chunking`, {
+           method: 'POST',
+           headers: getAuthHeaders(),
+           body: JSON.stringify({
+             document_id: currentDocumentId,
+             target_chunk_size: parseInt(chunkSize),
+             overlap: parseInt(overlap)
+           })
+         });
+         
+         if (response.ok) {
+           const data = await response.json();
+           currentChunkSetId = data.chunk_set_id;
+           
+           updateStepStatus(chunkingSection, 'completed');
+           showStatus('chunking-result', `✅ Document chunked successfully! Chunk Set ID: ${currentChunkSetId}`, 'success');
+           updateProgress(2, 5, 'Document chunked, ready to translate');
+           
+           document.getElementById('start-translation-btn').disabled = false;
+         } else {
+           const error = await response.json();
+           updateStepStatus(chunkingSection, 'error');
+           showStatus('chunking-result', `❌ Chunking failed: ${error.detail}`, 'error');
+         }
+       } catch (error) {
+         updateStepStatus(chunkingSection, 'error');
+         showStatus('chunking-result', `❌ Chunking error: ${error.message}`, 'error');
+       }
+     }
+     
+     async function startTranslation() {
+       updateStepStatus(translationSection, 'active');
+       showStatus('translation-result', 'Starting translation...', 'info');
+       
+       try {
+         const prompt = document.getElementById('translation-prompt').value;
+         
+         const response = await fetch(`${API_BASE_URL}/translations`, {
+           method: 'POST',
+           headers: getAuthHeaders(),
+           body: JSON.stringify({
+             chunk_set_id: currentChunkSetId,
+             prompt: prompt
+           })
+         });
+         
+         if (response.ok) {
+           const data = await response.json();
+           currentTranslationId = data.id;
+           
+           showStatus('translation-result', `✅ Translation started! ID: ${currentTranslationId}`, 'success');
+           updateProgress(3, 5, 'Translation in progress...');
+           
+           // Start monitoring translation progress
+           document.getElementById('translation-progress').style.display = 'block';
+           monitorTranslation();
+         } else {
+           const error = await response.json();
+           updateStepStatus(translationSection, 'error');
+           showStatus('translation-result', `❌ Translation failed to start: ${error.detail}`, 'error');
+         }
+       } catch (error) {
+         updateStepStatus(translationSection, 'error');
+         showStatus('translation-result', `❌ Translation error: ${error.message}`, 'error');
+       }
+     }
+     
+     async function monitorTranslation() {
+       const checkStatus = async () => {
+         try {
+           const response = await fetch(`${API_BASE_URL}/translations/${currentTranslationId}`, {
+             headers: getAuthHeaders()
+           });
+           
+           if (response.ok) {
+             const data = await response.json();
+             const progress = data.total_chunks > 0 ? (data.completed_chunks / data.total_chunks) * 100 : 0;
+             
+             document.getElementById('progress-chunks').textContent = data.completed_chunks;
+             document.getElementById('total-chunks').textContent = data.total_chunks;
+             document.getElementById('translation-progress-fill').style.width = `${progress}%`;
+             
+             // Enable download button if there are any completed chunks
+             if (data.completed_chunks > 0) {
+               document.getElementById('download-btn').disabled = false;
+             }
+             
+             if (data.status === 'completed') {
+               updateStepStatus(translationSection, 'completed');
+               showStatus('translation-result', `✅ Translation completed! (${data.completed_chunks}/${data.total_chunks} chunks)`, 'success');
+               updateProgress(4, 5, 'Translation completed, ready to download');
+               
+               return; // Stop monitoring
+             } else if (data.status === 'failed') {
+               updateStepStatus(translationSection, 'error');
+               showStatus('translation-result', `❌ Translation failed`, 'error');
+               return; // Stop monitoring
+             }
+             
+             // Continue monitoring
+             setTimeout(checkStatus, 2000);
+           }
+         } catch (error) {
+           console.error('Error monitoring translation:', error);
+           setTimeout(checkStatus, 2000);
+         }
+       };
+       
+       checkStatus();
+     }
+     
+     async function downloadTranslation() {
+       updateStepStatus(downloadSection, 'active');
+       showStatus('download-result', 'Downloading translation...', 'info');
+       
+       try {
+         const response = await fetch(`${API_BASE_URL}/translations/${currentTranslationId}/download`, {
+           headers: {
+             'Authorization': `Bearer ${authToken}`
+           }
+         });
+         
+         if (response.ok) {
+           const blob = await response.blob();
+           const url = window.URL.createObjectURL(blob);
+           const a = document.createElement('a');
+           a.href = url;
+           a.download = `translation_${currentTranslationId}.txt`;
+           document.body.appendChild(a);
+           a.click();
+           window.URL.revokeObjectURL(url);
+           document.body.removeChild(a);
+           
+           updateStepStatus(downloadSection, 'completed');
+           showStatus('download-result', `✅ Translation downloaded successfully!`, 'success');
+           updateProgress(5, 5, 'Workflow completed successfully!');
+           
+           // Show results summary
+           showWorkflowSummary();
+         } else {
+           const error = await response.json();
+           updateStepStatus(downloadSection, 'error');
+           showStatus('download-result', `❌ Download failed: ${error.detail}`, 'error');
+         }
+       } catch (error) {
+         updateStepStatus(downloadSection, 'error');
+         showStatus('download-result', `❌ Download error: ${error.message}`, 'error');
+       }
+     }
+     
+     function showWorkflowSummary() {
+       resultsSection.style.display = 'block';
+       document.getElementById('workflow-summary').innerHTML = `
+         <div class="success">
+           <h3>🎉 Workflow Completed Successfully!</h3>
+           <ul>
+             <li><strong>Document ID:</strong> ${currentDocumentId}</li>
+             <li><strong>Chunk Set ID:</strong> ${currentChunkSetId}</li>
+             <li><strong>Translation ID:</strong> ${currentTranslationId}</li>
+             <li><strong>Status:</strong> All steps completed</li>
+           </ul>
+           <p><strong>✅ The filename sanitization fix is working!</strong> The download completed without errors.</p>
+         </div>
+       `;
+     }
+
+     // Event listeners
+     loginBtn.addEventListener('click', login);
+     logoutBtn.addEventListener('click', logout);
+     
+     // Workflow event listeners
+     document.getElementById('upload-file-btn').addEventListener('click', uploadFile);
+     document.getElementById('chunk-file-btn').addEventListener('click', chunkFile);
+     document.getElementById('start-translation-btn').addEventListener('click', startTranslation);
+     document.getElementById('download-btn').addEventListener('click', downloadTranslation);
+  </script>
+</body>
+</html> 

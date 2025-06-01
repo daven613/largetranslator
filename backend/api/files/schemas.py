@@ -4,11 +4,12 @@ Defines Pydantic models for request/response validation.
 """
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, UUID4
 
 class FileUploadResponse(BaseModel):
     """Schema for file upload response"""
-    file_id: str = Field(..., description="Unique identifier for the file")
+    id: UUID4 = Field(..., description="Database ID of the document record")
+    file_id: str = Field(..., description="Storage path or identifier from the storage service (e.g., Supabase Storage path)")
     file_name: str = Field(..., description="Name of the uploaded file")
     file_size: int = Field(..., description="Size of the file in bytes")
     content_type: str = Field(..., description="MIME type of the file")
@@ -17,6 +18,7 @@ class FileUploadResponse(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
+                "id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1",
                 "file_id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1",
                 "file_name": "example.txt",
                 "file_size": 1024,
@@ -41,6 +43,23 @@ class FileMetadata(BaseModel):
                 "file_size": 1024,
                 "content_type": "text/plain",
                 "created_at": "2023-07-21T15:30:45Z"
+            }
+        }
+
+class FileMetadataResponse(BaseModel):
+    """Schema for single file metadata response"""
+    metadata: FileMetadata = Field(..., description="File metadata")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "metadata": {
+                    "file_id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1",
+                    "file_name": "example.txt",
+                    "file_size": 1024,
+                    "content_type": "text/plain",
+                    "created_at": "2023-07-21T15:30:45Z"
+                }
             }
         }
 
@@ -97,5 +116,49 @@ class DeleteFileResponse(BaseModel):
             "example": {
                 "success": True,
                 "file_id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1"
+            }
+        }
+
+class DocumentResponse(BaseModel):
+    """Schema for document response"""
+    id: UUID4 = Field(..., description="Database UUID of the document")
+    name: str = Field(..., description="Name of the document")
+    file_size: int = Field(..., description="Size of the file in bytes")
+    file_path: Optional[str] = Field(None, description="Storage path of the file")
+    created_at: datetime = Field(..., description="When the document was created")
+    updated_at: datetime = Field(..., description="When the document was last updated")
+    metadata: dict = Field(default_factory=dict, description="Additional metadata")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1",
+                "name": "example.txt",
+                "file_size": 1024,
+                "file_path": "user123/example.txt",
+                "created_at": "2023-07-21T15:30:45Z",
+                "updated_at": "2023-07-21T15:30:45Z",
+                "metadata": {"content_type": "text/plain"}
+            }
+        }
+
+class DocumentListResponse(BaseModel):
+    """Schema for listing documents"""
+    documents: List[DocumentResponse] = Field(default_factory=list, description="List of documents")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "documents": [
+                    {
+                        "id": "8f7b5db1-9c2a-4fe1-89a4-3e48e68c99a1",
+                        "name": "example1.txt",
+                        "file_size": 1024,
+                        "file_path": "user123/example1.txt",
+                        "created_at": "2023-07-21T15:30:45Z",
+                        "updated_at": "2023-07-21T15:30:45Z",
+                        "metadata": {"content_type": "text/plain"}
+                    }
+                ]
             }
         } 

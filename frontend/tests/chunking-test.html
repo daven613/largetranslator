@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chunking API Test Page</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .section {
+      background-color: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 900px;
+      margin-bottom: 20px;
+    }
+    .auth-status {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .logged-in {
+      background-color: #e7f7e7;
+      color: #2e7d32;
+      border: 1px solid #c3e6c3;
+    }
+    .logged-out {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1px solid #ffcdd2;
+    }
+    input {
+      width: 200px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+    }
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .logout-btn {
+      background-color: #f44336;
+    }
+    .hidden {
+      display: none;
+    }
+    .file-list {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .file-list th, .file-list td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    .file-list th {
+      background-color: #f0f0f0;
+      font-weight: 600;
+    }
+    .file-list tr:hover {
+      background-color: #f9f9f9;
+    }
+    .status-message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #e8f5e9;
+      color: #388e3c;
+      border: 1px solid #c8e6c9;
+    }
+    .error {
+      background-color: #ffebee;
+      color: #d32f2f;
+      border: 1px solid #ffcdd2;
+    }
+  </style>
+</head>
+<body>
+  <section class="section auth-section">
+    <h2>Authentication</h2>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div>
+        <input type="email" id="auth-email" placeholder="Email" value="daven613us@gmail.com">
+        <input type="password" id="auth-password" placeholder="Password" value="12341234">
+        <button id="login-btn">Login</button>
+        <button id="logout-btn" class="logout-btn" style="display: none;">Logout</button>
+      </div>
+      <div id="auth-status" class="auth-status logged-out">Not logged in</div>
+    </div>
+  </section>
+  
+  <section id="chunking-section" class="section" style="display: none;">
+    <h2>File Chunking</h2>
+    <div id="file-operations" style="display: block;">
+      <div>
+        <h3>Your Files</h3>
+        <button id="refresh-btn">Refresh List</button>
+        <div id="file-list-container">
+          <table class="file-list">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Size</th>
+                <th>Document ID</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="file-list-body">
+              <tr>
+                <td colspan="4" style="text-align: center;">No documents found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div id="chunking-form" style="margin-top: 20px; padding: 15px; border: 1px dashed #ccc; border-radius: 5px; display: none;">
+        <h3>Chunk File</h3>
+        <p>File: <span id="selected-file">None selected</span></p>
+        
+        <div style="margin-bottom: 10px;">
+          <label for="chunk-size">Target Chunk Size:</label>
+          <input type="number" id="chunk-size" value="2000" min="100" max="10000" style="width: 100px;">
+        </div>
+        
+        <div style="margin-bottom: 10px;">
+          <label for="overlap">Overlap:</label>
+          <input type="number" id="overlap" value="0" min="0" max="500" style="width: 100px;">
+        </div>
+        
+        <div>
+          <button id="process-btn">Process File</button>
+          <button id="cancel-btn">Cancel</button>
+        </div>
+        
+        <div id="chunking-status" class="status-message hidden"></div>
+      </div>
+
+      <!-- New section for testing chunk sets by document -->
+      <div id="chunk-sets-section" style="margin-top: 30px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Test: List Chunk Sets by Document</h3>
+        <div style="margin-bottom: 10px;">
+          <label for="document-id-input">Document ID:</label>
+          <input type="text" id="document-id-input" placeholder="Enter document UUID" style="width: 300px;">
+          <button id="list-chunk-sets-btn">List Chunk Sets</button>
+        </div>
+        <div id="chunk-sets-results" class="status-message hidden"></div>
+        <div id="chunk-sets-list" style="margin-top: 10px;"></div>
+      </div>
+
+      <!-- New section for testing chunks by chunk set -->
+      <div id="chunks-section" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">
+        <h3>Test: List Chunks by Chunk Set</h3>
+        <div style="margin-bottom: 10px;">
+          <label for="chunk-set-id-input">Chunk Set ID:</label>
+          <input type="text" id="chunk-set-id-input" placeholder="Enter chunk set UUID" style="width: 300px;">
+          <button id="list-chunks-btn">List Chunks</button>
+        </div>
+        <div id="chunks-results" class="status-message hidden"></div>
+        <div id="chunks-list" style="margin-top: 10px;"></div>
+      </div>
+    </div>
+    <div id="login-required" style="display: none;">
+      <p>Please login to use chunking features.</p>
+    </div>
+  </section>
+
+  <script>
+    // Base API URL
+    const API_BASE_URL = 'http://localhost:8000/api';
+
+    // Get authentication elements
+    const authStatus = document.getElementById('auth-status');
+    const authEmail = document.getElementById('auth-email');
+    const authPassword = document.getElementById('auth-password');
+    const loginBtn = document.getElementById('login-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const chunkingSection = document.getElementById('chunking-section');
+    const loginRequired = document.getElementById('login-required');
+    const fileOperations = document.getElementById('file-operations');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const fileListBody = document.getElementById('file-list-body');
+    const chunkingForm = document.getElementById('chunking-form');
+    const selectedFile = document.getElementById('selected-file');
+    const chunkSize = document.getElementById('chunk-size');
+    const overlap = document.getElementById('overlap');
+    const processBtn = document.getElementById('process-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const chunkingStatus = document.getElementById('chunking-status');
+
+    // Get new API testing elements
+    const documentIdInput = document.getElementById('document-id-input');
+    const listChunkSetsBtn = document.getElementById('list-chunk-sets-btn');
+    const chunkSetsResults = document.getElementById('chunk-sets-results');
+    const chunkSetsList = document.getElementById('chunk-sets-list');
+    const chunkSetIdInput = document.getElementById('chunk-set-id-input');
+    const listChunksBtn = document.getElementById('list-chunks-btn');
+    const chunksResults = document.getElementById('chunks-results');
+    const chunksList = document.getElementById('chunks-list');
+
+    // Current file info
+    let currentFileId = null;
+    let currentFileName = null;
+
+    // Check login status on page load
+    document.addEventListener('DOMContentLoaded', checkLoginStatus);
+
+    // Handle authentication
+    loginBtn.addEventListener('click', handleLogin);
+    logoutBtn.addEventListener('click', handleLogout);
+    refreshBtn.addEventListener('click', loadFileList);
+    processBtn.addEventListener('click', processChunking);
+    cancelBtn.addEventListener('click', cancelChunking);
+    
+    // Handle new API testing
+    listChunkSetsBtn.addEventListener('click', listChunkSetsByDocument);
+    listChunksBtn.addEventListener('click', listChunksByChunkSet);
+
+    // Check if token is expired
+    function isTokenExpired(token) {
+      if (!token) return true;
+      
+      try {
+        // Get the payload part of the JWT (second part)
+        const payload = token.split('.')[1];
+        // Base64 decode and parse JSON
+        const decoded = JSON.parse(atob(payload));
+        // Check if token has expired
+        const currentTime = Math.floor(Date.now() / 1000);
+        return decoded.exp < currentTime;
+      } catch (e) {
+        console.error('Error decoding token:', e);
+        return true;
+      }
+    }
+
+    // Check login status and update UI
+    function checkLoginStatus() {
+      const token = sessionStorage.getItem('auth_token');
+      const userEmail = sessionStorage.getItem('user_email');
+      
+      if (token && userEmail && !isTokenExpired(token)) {
+        // User is logged in with valid token
+        authStatus.textContent = `Logged in as: ${userEmail}`;
+        authStatus.className = 'auth-status logged-in';
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'inline-block';
+        
+        // Hide email/password inputs when logged in
+        authEmail.style.display = 'none';
+        authPassword.style.display = 'none';
+        
+        // Show chunking section
+        chunkingSection.style.display = 'block';
+        loginRequired.style.display = 'none';
+        fileOperations.style.display = 'block';
+        
+        // Load file list
+        loadFileList();
+      } else {
+        // User is not logged in or token expired
+        if (token && isTokenExpired(token)) {
+          handleLogout(); // Clear the expired token
+        }
+        
+        authStatus.textContent = 'Not logged in';
+        authStatus.className = 'auth-status logged-out';
+        loginBtn.style.display = 'inline-block';
+        logoutBtn.style.display = 'none';
+        
+        // Show email/password inputs when logged out
+        authEmail.style.display = 'inline-block';
+        authPassword.style.display = 'inline-block';
+        
+        // Hide chunking section
+        chunkingSection.style.display = 'none';
+        loginRequired.style.display = 'block';
+        fileOperations.style.display = 'none';
+      }
+    }
+
+    // Handle login
+    async function handleLogin() {
+      const email = authEmail.value;
+      const password = authPassword.value;
+      
+      if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          // Save auth data
+          if (data.token && data.token.access_token) {
+            sessionStorage.setItem('auth_token', data.token.access_token);
+            if (data.user && data.user.email) {
+              sessionStorage.setItem('user_email', data.user.email);
+              sessionStorage.setItem('user_id', data.user.id);
+            }
+            // Update login status
+            checkLoginStatus();
+          }
+        } else {
+          alert(`Login failed: ${data.detail || 'Invalid credentials'}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+
+    // Handle logout
+    function handleLogout() {
+      // Clear auth data
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user_email');
+      sessionStorage.removeItem('user_id');
+      
+      // Update status
+      checkLoginStatus();
+    }
+
+    // Load file list
+    async function loadFileList() {
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) {
+        alert('Please log in to load file list');
+        return;
+      }
+      
+      try {
+        // Load documents (with UUIDs) instead of just files
+        const response = await fetch(`${API_BASE_URL}/files/documents`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          if (!data.documents || data.documents.length === 0) {
+            fileListBody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No documents found</td></tr>';
+            return;
+          }
+          
+          // Update file list with document UUIDs
+          fileListBody.innerHTML = '';
+          data.documents.forEach(doc => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${doc.name}</td>
+              <td>${formatFileSize(doc.file_size)}</td>
+              <td>
+                <span title="${doc.id}" style="font-family: monospace; font-size: 12px;">${doc.id.substring(0, 8)}...</span>
+                <button onclick="copyDocumentId('${doc.id}')" style="margin-left: 5px; padding: 2px 6px; font-size: 11px;">Copy ID</button>
+              </td>
+              <td><button onclick="chunkFile('${doc.file_path}', '${doc.name}', '${doc.id}')">Chunk</button></td>
+            `;
+            fileListBody.appendChild(row);
+          });
+        } else {
+          alert(`Error loading document list: ${data.detail}`);
+        }
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      }
+    }
+    
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Chunk a file
+    function chunkFile(fileId, fileName, documentId) {
+      // Set current file
+      currentFileId = fileId;
+      currentFileName = fileName;
+      selectedFile.textContent = fileName;
+      
+      // Pre-populate the document ID for testing convenience
+      if (documentId) {
+        documentIdInput.value = documentId;
+      }
+      
+      // Show chunking form
+      chunkingForm.style.display = 'block';
+      
+      // Clear any previous status
+      chunkingStatus.className = 'status-message hidden';
+    }
+    
+        // Process chunking
+    async function processChunking() {
+      if (!currentFileId) {
+        alert('No file selected. Please click "Chunk" next to a file in the file list first.');
+        return;
+      }
+
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
+
+      // Get parameters
+      const targetChunkSize = parseInt(chunkSize.value);
+
+      // Create request body
+      const requestBody = {
+        file_id: currentFileId,
+        target_chunk_size: targetChunkSize,
+        processor_type: 'text_chunker'
+      };
+
+      console.log('Chunking request:', requestBody);
+      
+      // Show processing status
+      chunkingStatus.textContent = 'Processing file...';
+      chunkingStatus.className = 'status-message success';
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/chunking`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          chunkingStatus.textContent = `Success! Created ${data.chunk_count} chunks for document ID: ${data.document_id}`;
+          chunkingStatus.className = 'status-message success';
+          
+          // Auto-populate the test fields for convenience
+          documentIdInput.value = data.document_id;
+          chunkSetIdInput.value = data.chunk_set_id;
+        } else {
+          console.error('Chunking error response:', data);
+          chunkingStatus.textContent = `Error: ${data.detail || JSON.stringify(data) || 'Unknown error'}`;
+          chunkingStatus.className = 'status-message error';
+        }
+      } catch (error) {
+        console.error('Chunking request failed:', error);
+        chunkingStatus.textContent = `Error: ${error.message}`;
+        chunkingStatus.className = 'status-message error';
+      }
+    }
+    
+    // Cancel chunking
+    function cancelChunking() {
+      chunkingForm.style.display = 'none';
+      currentFileId = null;
+      currentFileName = null;
+      selectedFile.textContent = 'None selected';
+    }
+    
+    // Show or hide status message
+    function showStatus(element, message, type) {
+      if (!message) {
+        element.className = 'status-message hidden';
+        return;
+      }
+      
+      element.textContent = message;
+      element.className = `status-message ${type}`;
+    }
+
+    // List chunk sets by document ID
+    async function listChunkSetsByDocument() {
+      const documentId = documentIdInput.value.trim();
+      if (!documentId) {
+        alert('Please enter a document ID');
+        return;
+      }
+      
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
+      
+      chunkSetsResults.textContent = 'Loading chunk sets...';
+      chunkSetsResults.className = 'status-message success';
+      chunkSetsList.innerHTML = '';
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/chunking/chunk-sets/by-document/${documentId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          chunkSetsResults.textContent = `Found ${data.chunk_sets.length} chunk sets`;
+          chunkSetsResults.className = 'status-message success';
+          
+          if (data.chunk_sets.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'file-list';
+            table.innerHTML = `
+              <thead>
+                <tr>
+                  <th>Chunk Set ID</th>
+                  <th>Name</th>
+                  <th>Created At</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.chunk_sets.map(chunkSet => `
+                  <tr>
+                    <td>${chunkSet.id}</td>
+                    <td>${chunkSet.name || 'N/A'}</td>
+                    <td>${new Date(chunkSet.created_at).toLocaleString()}</td>
+                    <td><button onclick="copyToChunkSetInput('${chunkSet.id}')">Use for Chunks Test</button></td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            `;
+            chunkSetsList.appendChild(table);
+          }
+        } else {
+          chunkSetsResults.textContent = `Error: ${data.detail || 'Unknown error'}`;
+          chunkSetsResults.className = 'status-message error';
+        }
+      } catch (error) {
+        chunkSetsResults.textContent = `Error: ${error.message}`;
+        chunkSetsResults.className = 'status-message error';
+      }
+    }
+    
+    // List chunks by chunk set ID
+    async function listChunksByChunkSet() {
+      const chunkSetId = chunkSetIdInput.value.trim();
+      if (!chunkSetId) {
+        alert('Please enter a chunk set ID');
+        return;
+      }
+      
+      const token = sessionStorage.getItem('auth_token');
+      if (!token) {
+        alert('Please log in first');
+        return;
+      }
+      
+      chunksResults.textContent = 'Loading chunks...';
+      chunksResults.className = 'status-message success';
+      chunksList.innerHTML = '';
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/chunking/chunks/by-chunk-set/${chunkSetId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          chunksResults.textContent = `Found ${data.chunks.length} chunks`;
+          chunksResults.className = 'status-message success';
+          
+          if (data.chunks.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'file-list';
+            table.innerHTML = `
+              <thead>
+                <tr>
+                  <th>Sequence</th>
+                  <th>Chunk ID</th>
+                  <th>Content Preview</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.chunks.map(chunk => `
+                  <tr>
+                    <td>${chunk.sequence_number}</td>
+                    <td>${chunk.id}</td>
+                    <td>${chunk.content.substring(0, 100)}${chunk.content.length > 100 ? '...' : ''}</td>
+                    <td>${new Date(chunk.created_at).toLocaleString()}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            `;
+            chunksList.appendChild(table);
+          }
+        } else {
+          chunksResults.textContent = `Error: ${data.detail || 'Unknown error'}`;
+          chunksResults.className = 'status-message error';
+        }
+      } catch (error) {
+        chunksResults.textContent = `Error: ${error.message}`;
+        chunksResults.className = 'status-message error';
+      }
+    }
+    
+    // Helper function to copy chunk set ID to input
+    function copyToChunkSetInput(chunkSetId) {
+      chunkSetIdInput.value = chunkSetId;
+      alert('Chunk Set ID copied to input field');
+    }
+    
+    // Helper function to copy document ID to clipboard and input field
+    function copyDocumentId(documentId) {
+      // Copy to clipboard
+      navigator.clipboard.writeText(documentId).then(() => {
+        // Also populate the input field
+        documentIdInput.value = documentId;
+        alert('Document ID copied to clipboard and input field!');
+      }).catch(err => {
+        // Fallback if clipboard API fails
+        documentIdInput.value = documentId;
+        alert('Document ID copied to input field!');
+      });
+    }
+
+    // Make functions accessible globally
+    window.chunkFile = chunkFile;
+    window.copyToChunkSetInput = copyToChunkSetInput;
+    window.copyDocumentId = copyDocumentId;
+  </script>
+</body>
+</html> 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Large Translator - Upload Files</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .container {
+            max-width: 800px;
+        }
+        
+        .upload-section {
+            margin-bottom: 40px;
+        }
+        
+        .files-section {
+            margin-top: 40px;
+        }
+        
+        .files-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .files-header h2 {
+            color: #333;
+            margin: 0;
+        }
+        
+        .refresh-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .refresh-btn:hover {
+            background: #5a6268;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Upload Files</h1>
+            <p>Upload text files to translate with AI</p>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="upload-section">
+            <div class="file-drop-zone" id="dropZone">
+                <div class="icon">📄</div>
+                <h3>Drop your text file here</h3>
+                <p>or click to browse</p>
+                <input type="file" id="fileInput" style="display: none;" accept=".txt,.md,.csv,.json,.xml,.html,.css,.js,.py,.java,.cpp,.c,text/*">
+            </div>
+        </div>
+
+        <!-- Uploaded Files Section -->
+        <div class="files-section">
+            <div class="files-header">
+                <h2>Your Files</h2>
+                <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
+            </div>
+            
+            <div id="filesList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading files...
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="translate.html" class="btn btn-primary" style="margin-right: 10px;">
+                🔤 New Translation
+            </a>
+            <a href="history.html" class="btn btn-secondary">
+                📋 Translation History
+            </a>
+        </div>
+    </div>
+
+    <script src="js/shared.js"></script>
+    <script src="js/upload.js"></script>
+</body>
+</html> 
