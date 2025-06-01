@@ -240,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const updatedTranslation = await API.getTranslation(currentTranslation.id);
+            
             currentTranslation = updatedTranslation;
             
             // If job is complete or failed, stop polling

@@ -302,8 +302,11 @@ const TranslationStatus = {
   },
 
   calculateProgress(completedChunks, totalChunks) {
-    if (totalChunks === 0) return 0;
-    return Math.round((completedChunks / totalChunks) * 100);
+    if (totalChunks === 0) {
+      return 0;
+    }
+    const progress = Math.round((completedChunks / totalChunks) * 100);
+    return progress;
   }
 };
 

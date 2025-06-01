@@ -42,6 +42,8 @@ async def translate_chunk(chunk_id: UUID, translation_id: UUID, prompt: str) -> 
         Translated chunk ID or None if there was an error
     """
     try:
+        logger.info(f"Starting translation of chunk {chunk_id} for translation {translation_id}")
+        
         # Get translation
         translation = await get_translation_by_id(translation_id)
         if not translation:
@@ -66,7 +68,9 @@ async def translate_chunk(chunk_id: UUID, translation_id: UUID, prompt: str) -> 
         translation_prompt = f"{prompt}\n\nText to translate:\n{chunk.content}"
         
         # Translate chunk using prompt-based approach
+        logger.info(f"Calling OpenAI API to translate chunk {chunk_id}")
         translated_content = await translate_text_with_prompt(translation_prompt, translation.ai_model)
+        logger.info(f"Successfully translated chunk {chunk_id}")
         
         # Create translated chunk
         translated_chunk = await create_translated_chunk(
@@ -77,23 +81,25 @@ async def translate_chunk(chunk_id: UUID, translation_id: UUID, prompt: str) -> 
                 sequence_number=chunk.sequence_number
             )
         )
+        logger.info(f"Created translated chunk {translated_chunk.id} for chunk {chunk_id}")
         
         # Update translation progress
         new_completed_count = translation.completed_chunks + 1
         new_status = "completed" if new_completed_count >= translation.total_chunks else "in_progress"
         
-        await update_translation(
+        updated_translation = await update_translation(
             translation_id,
             models.TranslationUpdate(
                 completed_chunks=new_completed_count,
                 status=new_status
             )
         )
+        logger.info(f"Updated translation {translation_id} progress: {new_completed_count}/{translation.total_chunks} chunks, status: {new_status}")
         
         return translated_chunk.id
         
     except Exception as e:
-        logger.error(f"Failed to translate chunk: {str(e)}")
+        logger.error(f"Failed to translate chunk {chunk_id}: {str(e)}", exc_info=True)
         
         try:
             # Update translation status to failed
@@ -101,6 +107,7 @@ async def translate_chunk(chunk_id: UUID, translation_id: UUID, prompt: str) -> 
                 translation_id,
                 models.TranslationUpdate(status="failed")
             )
+            logger.info(f"Updated translation {translation_id} status to failed due to chunk error")
         except Exception as update_error:
             logger.error(f"Failed to update translation status: {str(update_error)}")
         
@@ -115,6 +122,8 @@ async def process_translation_job(job_id: UUID, user_id: UUID, prompt: str) -> N
         user_id: User ID
         prompt: Translation prompt
     """
+    import asyncio
+    
     try:
         # Get translation
         translation = await get_translation_by_id(job_id)
@@ -125,39 +134,60 @@ async def process_translation_job(job_id: UUID, user_id: UUID, prompt: str) -> N
         if str(translation.user_id) != str(user_id):
             raise ValueError("Permission denied")
         
-        # Update status to in_progress
+        # Update status to in_progress immediately
         await update_translation(
             job_id,
             models.TranslationUpdate(status="in_progress")
         )
+        logger.info(f"Translation {job_id} status updated to in_progress")
         
         # Get chunks from chunk set
         chunks = await get_chunks_by_chunk_set_id(translation.chunk_set_id)
+        logger.info(f"Processing {len(chunks)} chunks for translation {job_id}")
         
-        # Process each chunk
-        for chunk in chunks:
-            await translate_chunk(chunk.id, job_id, prompt)
+        # Process each chunk with delay to prevent resource exhaustion
+        for i, chunk in enumerate(chunks):
+            logger.info(f"Processing chunk {i+1}/{len(chunks)} for translation {job_id}")
+            
+            chunk_result = await translate_chunk(chunk.id, job_id, prompt)
+            
+            if chunk_result is None:
+                logger.error(f"Failed to translate chunk {chunk.id}, aborting translation {job_id}")
+                # The translate_chunk function already sets status to failed
+                return
+            
+            # Add small delay between chunks to prevent resource exhaustion
+            # and allow other requests to be processed
+            if i < len(chunks) - 1:  # Don't delay after the last chunk
+                await asyncio.sleep(0.1)  # 100ms delay
         
         # Re-fetch translation to get updated completed_chunks count
         updated_translation = await get_translation_by_id(job_id)
         if not updated_translation:
             raise ValueError(f"Translation with ID {job_id} not found after processing")
         
-        # Mark as completed when all chunks are processed (no automatic file assembly)
+        # Mark as completed when all chunks are processed
         if updated_translation.completed_chunks == updated_translation.total_chunks:
             await update_translation(
                 job_id,
                 models.TranslationUpdate(status="completed")
             )
+            logger.info(f"Translation {job_id} completed successfully")
+        else:
+            logger.warning(f"Translation {job_id} finished but completed_chunks ({updated_translation.completed_chunks}) != total_chunks ({updated_translation.total_chunks})")
     
     except Exception as e:
-        logger.error(f"Failed to process translation job: {str(e)}")
+        logger.error(f"Failed to process translation job {job_id}: {str(e)}", exc_info=True)
         
         # Update translation status to failed
-        await update_translation(
-            job_id,
-            models.TranslationUpdate(status="failed")
-        )
+        try:
+            await update_translation(
+                job_id,
+                models.TranslationUpdate(status="failed")
+            )
+            logger.info(f"Translation {job_id} status updated to failed")
+        except Exception as update_error:
+            logger.error(f"Failed to update translation {job_id} status to failed: {str(update_error)}")
 
 # API Endpoints
 
@@ -217,11 +247,18 @@ async def create_translation(
         
         job = await create_translation_db(translation_data)
         logger.info(f"Created translation job with ID: {job.id}")
+        
+        # Immediately set status to in_progress so frontend polling sees it
+        updated_job = await update_translation(
+            job.id,
+            models.TranslationUpdate(status="in_progress")
+        )
+        logger.info(f"Set translation {job.id} status to in_progress")
 
         # Start processing in background
         background_tasks.add_task(process_translation_job, job_id=job.id, user_id=user["id"], prompt=translation_request.prompt)
 
-        return schemas.TranslationResponse.model_validate(job, from_attributes=True)
+        return schemas.TranslationResponse.model_validate(updated_job, from_attributes=True)
     
     except HTTPException: 
         raise
