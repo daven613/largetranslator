@@ -18,16 +18,6 @@ def get_chat_response(prompt, key, model="gpt-4o" ):
     return response.choices[0].message.content
 
 
-def load_file():
-    file_path = '/content/Arukh HaShulchan, Orach Chayim -- Wikisource.txt'
-
-    # Open the file in read mode ('r')
-    with open(file_path, 'r') as file:
-        # Read the contents of the file into a variable
-        file_contents = file.read()
-    return file_contents
-
-
 def iterative_text_splitter(text, max_size, separators):
     """
     Iteratively splits a text into a list of strings based on a list of separators,

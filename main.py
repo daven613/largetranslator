@@ -10,8 +10,8 @@ import chardet
 import utils
 from utils import iterative_text_splitter
 
-# Placeholder for OpenAI API key
-api_key = "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"
+# Get OpenAI API key from environment variable
+api_key = os.getenv("OPENAI_API_KEY", "")
 
 
 # Function to process a single string with improved error handling
@@ -19,9 +19,9 @@ def process_string(input_string):
     try:
         result = utils.get_chat_response(input_string, api_key)
         return {"input": input_string, "output": result, "error": ""}
-    except openai.error.APIError as e:
+    except openai.APIError as e:
         return {"input": input_string, "output": "", "error": f"API Error: {str(e)}"}
-    except openai.error.RateLimitError as e:
+    except openai.RateLimitError as e:
         return {"input": input_string, "output": "", "error": f"Rate Limit Error: {str(e)}"}
     except Exception as e:
         return {"input": input_string, "output": "", "error": f"Unexpected Error: {str(e)}"}
@@ -103,7 +103,8 @@ def main():
 
         # Update initial progress
         progress_text.text(f"Current progress: {current_index}/{total_strings}")
-        progress_bar.progress(current_index / total_strings)
+        if total_strings > 0:
+            progress_bar.progress(current_index / total_strings)
 
         # Button to start/pause processing
         if st.button("Start/Pause Processing"):
@@ -136,7 +137,8 @@ def main():
                 # Update progress bar and state
                 current_index = i + 1
                 progress_text.text(f"Current progress: {current_index}/{total_strings}")
-                progress_bar.progress(current_index / total_strings)
+                if total_strings > 0:
+                    progress_bar.progress(current_index / total_strings)
                 save_state(state_file, {"processing": st.session_state.processing, "current_index": current_index})
 
                 # Add a small delay to allow for interruption
@@ -149,7 +151,7 @@ def main():
         # Retry failed requests
         failed_inputs = st.session_state["results"][st.session_state["results"]["Error"] != ""]
         for index, row in failed_inputs.iterrows():
-            if st.button(f"Retry: {row['Input'][:50]}..."):
+            if st.button(f"Retry: {row['Input'][:50]}...", key=f"retry_{index}"):
                 result = process_string(row["Input"])
                 st.session_state["results"].loc[index] = [result["input"], result["output"], result["error"]]
                 save_progress(st.session_state["results"], progress_file)

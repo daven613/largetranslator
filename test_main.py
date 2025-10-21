@@ -1,4 +1,4 @@
-from turtle import st
+import streamlit as st
 from unittest.mock import patch
 
 import pandas as pd
@@ -51,7 +51,16 @@ class TestMain(unittest.TestCase):
 
         # Assert the results dataframe
         expected_results = pd.DataFrame(columns=["Input", "Output", "Error"])
-        expected_results = expected_results.append({"Input": "This is", "Output": "a response", "Error": ""}, ignore_index=True)
-        expected_results = expected_results.append({"Input": " a test", "Output": "", "Error": ""}, ignore_index=True)
-        expected_results = expected_results.append({"Input": " string.", "Output": "", "Error": ""}, ignore_index=True)
+        expected_results = pd.concat([
+            expected_results,
+            pd.DataFrame([{"Input": "This is", "Output": "a response", "Error": ""}])
+        ], ignore_index=True)
+        expected_results = pd.concat([
+            expected_results,
+            pd.DataFrame([{"Input": " a test", "Output": "", "Error": ""}])
+        ], ignore_index=True)
+        expected_results = pd.concat([
+            expected_results,
+            pd.DataFrame([{"Input": " string.", "Output": "", "Error": ""}])
+        ], ignore_index=True)
         self.assertEqual(st.session_state["results"].to_dict(), expected_results.to_dict())
